@@ -4,13 +4,15 @@ on:
   push:
     paths:
       - "**.go"
-
-jobs:
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: golangci/golangci-lint-action@v2
-        with:
-          version: latest
+# jobs:
+# golangci-lint currently doesn't support go 1.18
+# https://github.com/golangci/golangci-lint/pull/2438
+#
+# lint:
+#   name: Lint
+#   runs-on: ubuntu-latest
+#   steps:
+#     - uses: actions/checkout@v2
+#     - uses: golangci/golangci-lint-action@v2
+#       with:
+#         version: latest
