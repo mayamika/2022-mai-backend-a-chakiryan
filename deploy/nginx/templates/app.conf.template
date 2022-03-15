@@ -1,0 +1,12 @@
+server {
+    listen 80;
+    root  /opt/app;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    location /api {
+        proxy_pass ${API_SERVER_ADDR};
+    }
+}
