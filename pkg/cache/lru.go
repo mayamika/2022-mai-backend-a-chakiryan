@@ -34,9 +34,7 @@ func (c *LRU[K, V]) Get(key K) (V, bool) {
 		return v, false
 	}
 
-	r.Prev().Link(r.Next())
-	r.Link(c.head)
-	c.head = r
+	c.moveToFront(r)
 
 	kv := r.Value.(*keyValue[K, V])
 	return kv.value, true
@@ -48,6 +46,7 @@ func (c *LRU[K, V]) Set(key K, val V) {
 	r, ok := c.byKey[key]
 	if ok {
 		r.Value = kv
+		c.moveToFront(r)
 		return
 	}
 
@@ -97,4 +96,12 @@ func (c *LRU[K, V]) Remove(key K) {
 		c.head = r.Next()
 	}
 	r.Prev().Link(r.Next())
+}
+
+func (c *LRU[K, V]) moveToFront(r *ring.Ring) {
+	if r != c.head {
+		r.Prev().Link(r.Next())
+		r.Link(c.head)
+		c.head = r
+	}
 }

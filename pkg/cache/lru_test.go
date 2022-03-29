@@ -13,26 +13,6 @@ type LRU = cache.LRU[string, string]
 
 type Op func(t *testing.T, c *LRU)
 
-func set(k, v string) Op {
-	return func(t *testing.T, c *LRU) {
-		c.Set(k, v)
-	}
-}
-
-func get(k, want string) Op {
-	return func(t *testing.T, c *LRU) {
-		v, ok := c.Get(k)
-		assert.Equal(t, want != "", ok)
-		assert.Equal(t, want, v)
-	}
-}
-
-func remove(key string) Op {
-	return func(t *testing.T, c *LRU) {
-		c.Remove(key)
-	}
-}
-
 type TestCase struct {
 	Name string
 	Cap  int
@@ -92,6 +72,17 @@ func TestLRU(t *testing.T) {
 				get("c", ""),
 			},
 		},
+		{
+			Name: "Issue1337",
+			Cap:  2,
+			Ops: []Op{
+				set("a", "A"),
+				set("b", "B"),
+				get("b", "B"),
+				set("c", "C"),
+				get("a", ""),
+			},
+		},
 	}
 
 	for i := range testCases {
@@ -122,4 +113,24 @@ func testHomework(t *testing.T) {
 	v, ok = c.Get("Walter")
 	r.False(ok)
 	r.Equal(v, "")
+}
+
+func set(k, v string) Op {
+	return func(t *testing.T, c *LRU) {
+		c.Set(k, v)
+	}
+}
+
+func get(k, want string) Op {
+	return func(t *testing.T, c *LRU) {
+		v, ok := c.Get(k)
+		assert.Equal(t, want != "", ok)
+		assert.Equal(t, want, v)
+	}
+}
+
+func remove(key string) Op {
+	return func(t *testing.T, c *LRU) {
+		c.Remove(key)
+	}
 }
