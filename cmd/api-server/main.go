@@ -2,56 +2,26 @@ package main
 
 import (
 	"context"
-	"errors"
-	"net/http"
 	"os"
 	"os/signal"
 	"time"
 
-	"github.com/go-chi/chi"
-	"github.com/go-chi/render"
-	"github.com/rs/cors"
+	"github.com/mayamika/2022-mai-backend-a-chakiryan/api-server/app"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
 func main() {
-	api := chi.NewRouter()
-	api.Get("/hello", func(w http.ResponseWriter, r *http.Request) {
-		type HelloResponse struct {
-			Hello string `json:"hello,omitempty"`
-		}
-		res := &HelloResponse{
-			Hello: "World",
-		}
-
-		render.JSON(w, r, res)
-		render.Status(r, http.StatusOK)
-	})
-
-	router := chi.NewRouter()
-	router.Mount("/api", api)
-
-	corsOptions := cors.Options{}
-
-	server := &http.Server{
-		Addr:    ":8080",
-		Handler: cors.New(corsOptions).Handler(router),
+	config := app.Config{
+		Addr: ":8080",
 	}
-	logger := newLogger()
-
-	go func() {
-		logger.Info("listening http", zap.String("addr", server.Addr))
-		defer logger.Info("stopped")
-
-		err := server.ListenAndServe()
-		if !errors.Is(err, http.ErrServerClosed) {
-			logger.Error("listen http", zap.Error(err))
-		}
-	}()
+	config.BindEnv()
+	a := app.New(config)
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)
+
+	logger := newLogger()
 
 	<-stop
 	logger.Info("stopping")
@@ -59,8 +29,8 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	if err := server.Shutdown(ctx); err != nil {
-		logger.Error("shutdown http", zap.Error(err))
+	if err := a.Stop(ctx); err != nil {
+		logger.Error("shutdown", zap.Error(err))
 	}
 }
 

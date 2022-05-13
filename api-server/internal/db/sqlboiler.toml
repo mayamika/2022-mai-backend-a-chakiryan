@@ -1,0 +1,14 @@
+output   = "api-server/internal/db/model"
+wipe     = true
+no-tests = true
+add-enum-types = true
+
+[psql]
+  user   = "postgres"
+  pass   = "pass"
+  host   = "localhost"
+  port   = 5432
+  dbname = "mai_backend"
+  schema = "api_server"
+  sslmode   = "disable"
+  blacklist = []
