@@ -35,7 +35,8 @@ resolver:
 # gqlgen will search for any type names in the schema in these go packages
 # if they match it will use them, otherwise it will generate them.
 autobind:
-#  - "github.com/mayamika/2022-mai-backend-a-chakiryan/api-server/internal/model"
+  - "github.com/mayamika/2022-mai-backend-a-chakiryan/api-server/internal/model/auth"
+  - "github.com/mayamika/2022-mai-backend-a-chakiryan/api-server/internal/model/user"
 
 # This section declares type mapping between the GraphQL and go type systems
 #

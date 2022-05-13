@@ -1,7 +1,22 @@
 package gqlresolver
 
-// This file will not be regenerated automatically.
-//
-// It serves as dependency injection for your app, add any dependencies you require here.
+import (
+	"context"
 
-type Resolver struct{}
+	"github.com/mayamika/2022-mai-backend-a-chakiryan/api-server/internal/model/auth"
+)
+
+type AuthService interface {
+	Login(context.Context, auth.LoginInput) (*auth.LoginPayload, error)
+	Register(context.Context, auth.RegisterInput) (*auth.RegisterPayload, error)
+}
+
+type Resolver struct {
+	authService AuthService
+}
+
+func New(authService AuthService) *Resolver {
+	return &Resolver{
+		authService: authService,
+	}
+}

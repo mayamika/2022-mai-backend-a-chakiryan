@@ -1,5 +1,5 @@
-GO 				?= go
-SUDO 			?= sudo
+GO				?= go
+SUDO			?= sudo
 CONTAINER_TOOL	?= podman
 PROJECT			?= mai-backend
 
@@ -14,6 +14,18 @@ API_SERVER_IMAGE			:= $(API_SERVER_IMAGE_NAME):$(API_SERVER_IMAGE_VERSION)
 UI_SERVER_IMAGE_NAME	?= ui-server
 UI_SERVER_IMAGE_VERSION	?= latest
 UI_SERVER_IMAGE			:= $(UI_SERVER_IMAGE_NAME):$(UI_SERVER_IMAGE_VERSION)
+
+# Build dirs
+
+BUILD_CACHE_DIR := ./.build-cache
+
+BUILD_DIRS := $(BUILD_CACHE_DIR)
+$(BUILD_DIRS):
+	mkdir -p $(BUILD_DIRS)
+
+# Include
+
+include make/db.mk
 
 # Build
 
@@ -114,3 +126,17 @@ stop: \
 start: container-env \
 	start-api-server \
 	start-ui-server
+
+# Docker compose
+
+.PHONY: up
+up:
+	docker-compose up
+
+.PHONY: down
+down:
+	docker-compose down
+
+.PHONY: rm
+rm:
+	docker-compose rm -f
