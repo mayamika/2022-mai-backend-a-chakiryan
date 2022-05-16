@@ -1,22 +1,21 @@
 package auth
 
-type (
-	LoginInput struct {
-		Username string
-		Password string
-	}
+type LoginInput struct {
+	Login    string
+	Password string
+}
 
-	LoginPayload struct {
-		Token string
-	}
-)
+type LoginPayload struct {
+	Token string
+}
 
-type (
-	RegisterInput struct {
-		Username string
-		Name     string
-		Surname  string
-	}
+type RegisterInput struct {
+	Login    string
+	Password string
+	Name     string
+	Surname  string
+}
 
-	RegisterPayload LoginPayload
-)
+type RegisterPayload struct {
+	Token string
+}

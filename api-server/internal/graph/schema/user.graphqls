@@ -1,6 +1,34 @@
-type User {
+type User implements Node {
   id: ID!
-  username: String!
+  login: String!
   name: String!
   surname: String!
+
+  friends(
+    after: Cursor
+    first: Int
+    before: Cursor
+    last: Int
+    orderBy: UserOrder!
+  ): UserConnection!
+}
+
+type UserConnection {
+  pageInfo: PageInfo!
+  edges: [UserEdge]
+}
+
+type UserEdge {
+  node: User
+  cursor: Cursor!
+}
+
+enum UserOrderField {
+  NAME
+  SURNAME
+}
+
+input UserOrder {
+  direction: OrderDirection!
+  field: UserOrderField!
 }

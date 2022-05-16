@@ -1,0 +1,13 @@
+scalar Cursor
+
+type PageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: Cursor
+  endCursor: Cursor
+}
+
+enum OrderDirection {
+  ASC
+  DESC
+}
