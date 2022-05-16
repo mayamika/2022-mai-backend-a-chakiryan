@@ -16,12 +16,21 @@ func main() {
 		Addr: ":8080",
 	}
 	config.BindEnv()
-	a := app.New(config)
+
+	logger := newLogger()
+
+	startCtx, cancelStart := context.WithCancel(context.Background())
+	defer cancelStart()
+
+	a, err := app.New(startCtx, config, logger)
+	if err != nil {
+		cancelStart()
+		logger.Fatal("start", zap.Error(err))
+	}
+	logger.Info("started")
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)
-
-	logger := newLogger()
 
 	<-stop
 	logger.Info("stopping")

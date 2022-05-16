@@ -23,10 +23,6 @@ BUILD_DIRS := $(BUILD_CACHE_DIR)
 $(BUILD_DIRS):
 	mkdir -p $(BUILD_DIRS)
 
-# Include
-
-include make/db.mk
-
 # Build
 
 define build-image =

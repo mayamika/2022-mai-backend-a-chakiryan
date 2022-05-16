@@ -1,21 +1,24 @@
-extend type Mutation {
-  login(input: LoginInput!): LoginPayload!
-  register(input: RegisterInput!): RegisterPayload!
-}
-
 input LoginInput {
-  username: String!
+  login: String!
   password: String!
 }
+
 type LoginPayload {
   token: String!
 }
 
 input RegisterInput {
-  username: String!
+  login: String!
+  password: String!
   name: String!
   surname: String!
 }
+
 type RegisterPayload {
   token: String!
+}
+
+extend type Mutation {
+  login(input: LoginInput!): LoginPayload!
+  register(input: RegisterInput!): RegisterPayload!
 }

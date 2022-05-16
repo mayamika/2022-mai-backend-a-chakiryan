@@ -11,11 +11,11 @@ import (
 )
 
 func (r *mutationResolver) Login(ctx context.Context, input auth.LoginInput) (*auth.LoginPayload, error) {
-	return r.authService.Login(ctx, input)
+	return r.authController.Login(ctx, input)
 }
 
 func (r *mutationResolver) Register(ctx context.Context, input auth.RegisterInput) (*auth.RegisterPayload, error) {
-	return r.authService.Register(ctx, input)
+	return r.authController.Register(ctx, input)
 }
 
 // Mutation returns gqlgenerated.MutationResolver implementation.
