@@ -14,6 +14,7 @@ type RegisterInput struct {
 	Password string
 	Name     string
 	Surname  string
+	Email    string
 }
 
 type RegisterPayload struct {

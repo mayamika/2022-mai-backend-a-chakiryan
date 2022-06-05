@@ -7,7 +7,6 @@ import (
 	"context"
 
 	"github.com/mayamika/2022-mai-backend-a-chakiryan/api-server/internal/ent"
-	gqlgenerated "github.com/mayamika/2022-mai-backend-a-chakiryan/api-server/internal/graph/generated"
 )
 
 func (r *queryResolver) Node(ctx context.Context, id int) (ent.Noder, error) {
@@ -17,8 +16,3 @@ func (r *queryResolver) Node(ctx context.Context, id int) (ent.Noder, error) {
 func (r *queryResolver) Nodes(ctx context.Context, ids []int) ([]ent.Noder, error) {
 	return ent.FromContext(ctx).Noders(ctx, ids)
 }
-
-// Query returns gqlgenerated.QueryResolver implementation.
-func (r *Resolver) Query() gqlgenerated.QueryResolver { return &queryResolver{r} }
-
-type queryResolver struct{ *Resolver }

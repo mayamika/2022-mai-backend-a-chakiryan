@@ -10,12 +10,17 @@ type LoginPayload {
 input RegisterInput {
   login: String!
   password: String!
+  email: String!
   name: String!
   surname: String!
 }
 
 type RegisterPayload {
   token: String!
+}
+
+extend type Query {
+  me: User!
 }
 
 extend type Mutation {

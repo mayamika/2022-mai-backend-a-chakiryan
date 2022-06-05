@@ -1,7 +1,7 @@
 version: '3.9'
 
 services:
-  db:
+  postgres:
     image: docker.io/postgres:14.2
     restart: always
     ports:
@@ -9,3 +9,16 @@ services:
     environment:
       POSTGRES_PASSWORD: pass
       POSTGRES_DB: mai_backend
+  opensearch:
+    image: docker.io/opensearchproject/opensearch:2.0.0
+    environment:
+      - discovery.type=single-node
+    ports:
+      - 9200:9200
+      - 9600:9600
+  opensearch-dashboards:
+    image: docker.io/opensearchproject/opensearch-dashboards:2.0.0
+    ports:
+      - 5601:5601
+    environment:
+      OPENSEARCH_HOSTS: '["https://opensearch:9200"]'

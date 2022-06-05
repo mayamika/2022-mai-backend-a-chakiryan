@@ -19,6 +19,9 @@ func (User) Fields() []ent.Field {
 		field.String("login").
 			NotEmpty().
 			Unique(),
+		field.String("email").
+			NotEmpty().
+			Unique(),
 		field.String("name").
 			NotEmpty().
 			Annotations(

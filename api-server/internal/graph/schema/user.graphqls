@@ -4,23 +4,33 @@ type User implements Node {
   name: String!
   surname: String!
 
+  relation: UserRelation!
+
   friends(
     after: Cursor
     first: Int
     before: Cursor
     last: Int
-    orderBy: UserOrder!
+    orderBy: UserOrder! = { direction: ASC, field: NAME }
   ): UserConnection!
 }
 
-type UserConnection {
-  pageInfo: PageInfo!
-  edges: [UserEdge]
+enum UserRelation {
+  STRANGER
+  YOU
+  FRIEND_REQUEST_SENT
+  FRIEND
 }
 
 type UserEdge {
   node: User
   cursor: Cursor!
+}
+
+type UserConnection {
+  totalCount: Int!
+  pageInfo: PageInfo!
+  edges: [UserEdge]
 }
 
 enum UserOrderField {
@@ -31,4 +41,15 @@ enum UserOrderField {
 input UserOrder {
   direction: OrderDirection!
   field: UserOrderField!
+}
+
+extend type Query {
+  users(
+    after: Cursor
+    first: Int
+    before: Cursor
+    last: Int
+    search: String
+    orderBy: UserOrder! = { direction: ASC, field: NAME }
+  ): UserConnection!
 }

@@ -12,6 +12,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/mayamika/2022-mai-backend-a-chakiryan/api-server/internal/controller/auth"
+	"github.com/mayamika/2022-mai-backend-a-chakiryan/api-server/internal/controller/friend"
 	"github.com/mayamika/2022-mai-backend-a-chakiryan/api-server/internal/ent"
 	"github.com/mayamika/2022-mai-backend-a-chakiryan/api-server/internal/ent/migrate"
 )
@@ -20,25 +21,27 @@ type App struct {
 	client     *ent.Client
 	httpServer *http.Server
 
-	authController *auth.Controller
+	authController   *auth.Controller
+	friendController *friend.Controller
 }
 
 func New(ctx context.Context, c Config, logger *zap.Logger) (*App, error) {
 	client, err := ent.Open(dialect.Postgres, c.Postgres)
 	if err != nil {
-		return nil, fmt.Errorf("can't open ent client: %w", err)
+		return nil, fmt.Errorf("open ent client: %w", err)
 	}
 	migrateOpts := []schema.MigrateOption{
 		migrate.WithGlobalUniqueID(true),
 	}
 	if err := client.Schema.Create(ctx, migrateOpts...); err != nil {
 		client.Close()
-		return nil, fmt.Errorf("can't migrate schema: %w", err)
+		return nil, fmt.Errorf("migrate schema: %w", err)
 	}
 
 	a := &App{
-		client:         client,
-		authController: auth.NewController(),
+		client:           client,
+		authController:   auth.NewController(),
+		friendController: friend.NewController(),
 	}
 
 	r := a.routes()

@@ -164,6 +164,30 @@ func DenyMutationOperationRule(op ent.Op) MutationRule {
 	return OnMutationOperation(rule, op)
 }
 
+// The FriendRequestQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type FriendRequestQueryRuleFunc func(context.Context, *ent.FriendRequestQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f FriendRequestQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.FriendRequestQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.FriendRequestQuery", q)
+}
+
+// The FriendRequestMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type FriendRequestMutationRuleFunc func(context.Context, *ent.FriendRequestMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f FriendRequestMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.FriendRequestMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.FriendRequestMutation", m)
+}
+
 // The UserQueryRuleFunc type is an adapter to allow the use of ordinary
 // functions as a query rule.
 type UserQueryRuleFunc func(context.Context, *ent.UserQuery) error
@@ -186,28 +210,4 @@ func (f UserMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) 
 		return f(ctx, m)
 	}
 	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.UserMutation", m)
-}
-
-// The UserAuthQueryRuleFunc type is an adapter to allow the use of ordinary
-// functions as a query rule.
-type UserAuthQueryRuleFunc func(context.Context, *ent.UserAuthQuery) error
-
-// EvalQuery return f(ctx, q).
-func (f UserAuthQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
-	if q, ok := q.(*ent.UserAuthQuery); ok {
-		return f(ctx, q)
-	}
-	return Denyf("ent/privacy: unexpected query type %T, expect *ent.UserAuthQuery", q)
-}
-
-// The UserAuthMutationRuleFunc type is an adapter to allow the use of ordinary
-// functions as a mutation rule.
-type UserAuthMutationRuleFunc func(context.Context, *ent.UserAuthMutation) error
-
-// EvalMutation calls f(ctx, m).
-func (f UserAuthMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
-	if m, ok := m.(*ent.UserAuthMutation); ok {
-		return f(ctx, m)
-	}
-	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.UserAuthMutation", m)
 }

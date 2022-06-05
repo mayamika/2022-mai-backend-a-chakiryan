@@ -1,0 +1,32 @@
+type FriendRequest implements Node {
+  id: ID!
+  from: User!
+  to: User!
+}
+
+type FriendRequestEdge {
+  node: FriendRequest
+  cursor: Cursor!
+}
+
+type FriendRequestConnection {
+  totalCount: Int!
+  pageInfo: PageInfo!
+  edges: [FriendRequestEdge]
+}
+
+extend type Mutation {
+  addFriendRequest(to: ID!): FriendRequest!
+  acceptFriendRequest(id: ID!): ID!
+  declineFriendRequest(id: ID!): ID!
+  removeFriend(id: ID!): User!
+}
+
+extend type Query {
+  friendRequests(
+    after: Cursor
+    first: Int
+    before: Cursor
+    last: Int
+  ): FriendRequestConnection!
+}
