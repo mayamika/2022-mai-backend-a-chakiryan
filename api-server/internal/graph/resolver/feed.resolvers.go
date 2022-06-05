@@ -5,11 +5,25 @@ package gqlresolver
 
 import (
 	"context"
-	"fmt"
 
+	"github.com/mayamika/2022-mai-backend-a-chakiryan/api-server/internal/ent"
+	gqlgenerated "github.com/mayamika/2022-mai-backend-a-chakiryan/api-server/internal/graph/generated"
 	"github.com/mayamika/2022-mai-backend-a-chakiryan/api-server/internal/model/feed"
 )
 
-func (r *queryResolver) Feed(ctx context.Context, after *string, first *int, before *string, last *int, search *string) (*feed.PostConnection, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *mutationResolver) PublishPost(ctx context.Context, input feed.PostInput) (*feed.Post, error) {
+	return r.feedController.PublishPost(ctx, input)
 }
+
+func (r *postResolver) From(ctx context.Context, obj *feed.Post) (*ent.User, error) {
+	return ent.FromContext(ctx).User.Get(ctx, obj.From)
+}
+
+func (r *queryResolver) Feed(ctx context.Context, first int, after *string, search *string) (*feed.FeedPayload, error) {
+	return r.feedController.Feed(ctx, first, after, search)
+}
+
+// Post returns gqlgenerated.PostResolver implementation.
+func (r *Resolver) Post() gqlgenerated.PostResolver { return &postResolver{r} }
+
+type postResolver struct{ *Resolver }

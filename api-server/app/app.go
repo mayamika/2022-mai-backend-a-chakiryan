@@ -2,16 +2,21 @@ package app
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql/schema"
 	_ "github.com/lib/pq"
+	"github.com/opensearch-project/opensearch-go"
+	"github.com/opensearch-project/opensearch-go/opensearchapi"
 	"go.uber.org/zap"
 
 	"github.com/mayamika/2022-mai-backend-a-chakiryan/api-server/internal/controller/auth"
+	"github.com/mayamika/2022-mai-backend-a-chakiryan/api-server/internal/controller/feed"
 	"github.com/mayamika/2022-mai-backend-a-chakiryan/api-server/internal/controller/friend"
 	"github.com/mayamika/2022-mai-backend-a-chakiryan/api-server/internal/ent"
 	"github.com/mayamika/2022-mai-backend-a-chakiryan/api-server/internal/ent/migrate"
@@ -23,6 +28,7 @@ type App struct {
 
 	authController   *auth.Controller
 	friendController *friend.Controller
+	feedController   *feed.Controller
 }
 
 func New(ctx context.Context, c Config, logger *zap.Logger) (*App, error) {
@@ -38,10 +44,19 @@ func New(ctx context.Context, c Config, logger *zap.Logger) (*App, error) {
 		return nil, fmt.Errorf("migrate schema: %w", err)
 	}
 
+	opensearchClient, err := newOpensearchClient(c)
+	if err != nil {
+		return nil, fmt.Errorf("open opensearch client: %w", err)
+	}
+	if err := pingOpenSearch(ctx, opensearchClient); err != nil {
+		logger.Warn("ping opensearch cluster failed", zap.Error(err))
+	}
+
 	a := &App{
 		client:           client,
 		authController:   auth.NewController(),
 		friendController: friend.NewController(),
+		feedController:   feed.NewController(opensearchClient),
 	}
 
 	r := a.routes()
@@ -64,4 +79,28 @@ func (a *App) Stop(ctx context.Context) error {
 		return err
 	}
 	return a.client.Close()
+}
+
+func newOpensearchClient(c Config) (*opensearch.Client, error) {
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: true,
+	}
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.TLSClientConfig = tlsConfig
+
+	return opensearch.NewClient(opensearch.Config{
+		Addresses: c.OpensearchAddresses,
+		Username:  c.OpensearchUsername,
+		Password:  c.OpensearchPassword,
+		Transport: transport,
+	})
+}
+
+func pingOpenSearch(ctx context.Context, client *opensearch.Client) error {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	pingRequest := opensearchapi.PingRequest{}
+	_, err := pingRequest.Do(ctx, client)
+	return err
 }
