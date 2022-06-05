@@ -53,6 +53,7 @@ func (c *Controller) Feed(
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
+		fmt.Println(res.String())
 		return nil, errors.New("search request failed")
 	}
 
@@ -112,8 +113,9 @@ func (c *Controller) PublishPost(
 		return nil, fmt.Errorf("encode: %w", err)
 	}
 	indexRequest := opensearchapi.IndexRequest{
-		Index: index,
-		Body:  &reqBody,
+		Index:   index,
+		Body:    &reqBody,
+		Refresh: "wait_for",
 	}
 
 	res, err := indexRequest.Do(ctx, c.client)

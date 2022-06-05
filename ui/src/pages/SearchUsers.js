@@ -45,7 +45,7 @@ function SearchUsers() {
   });
 
   if (error) {
-    console.log(errror);
+    console.log(error);
   }
   if (loading || error) {
     return <div />;

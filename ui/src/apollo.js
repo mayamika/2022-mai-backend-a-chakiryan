@@ -28,6 +28,37 @@ function ApolloProvider({ children }) {
 
   const cache = new InMemoryCache({
     typePolicies: {
+      Query: {
+        fields: {
+          feed: {
+            merge(existing, incoming, { readField }) {
+              const posts = existing ? { ...existing.posts } : {};
+              if (incoming.posts) {
+                incoming.posts.forEach((post) => {
+                  posts[readField('id', post)] = post;
+                });
+              }
+              return {
+                totalCount: incoming.totalCount,
+                hasNextPage: incoming.hasNextPage,
+                scroll: incoming.scroll,
+                posts: posts,
+              };
+            },
+
+            read(existing) {
+              if (existing) {
+                return {
+                  totalCount: existing.totalCount,
+                  hasNextPage: existing.hasNextPage,
+                  scroll: existing.scroll,
+                  posts: Object.values(existing.posts),
+                };
+              }
+            },
+          },
+        },
+      },
       User: {
         fields: {
           friends: relayStylePagination(),

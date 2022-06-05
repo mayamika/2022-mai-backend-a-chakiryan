@@ -37,7 +37,7 @@ function Friends() {
   const { data, loading, error, fetchMore } = useQuery(FRIENDS);
 
   if (error) {
-    console.log(errror);
+    console.log(error);
   }
   if (loading || error) {
     return <div />;
@@ -56,22 +56,22 @@ function Friends() {
 
   return (
     <Container maxWidth='md' sx={{ mt: 5 }}>
-      <Stack spacing={2}>
-        <InfiniteScroll
-          pageStart={0}
-          loadMore={() => {
-            fetchMore({
-              variables: {
-                cursor: pageInfo.endCursor,
-              },
-            });
-          }}
-          hasMore={pageInfo.hasNextPage}
-          loader={<div className="loader" key={0}>Loading ...</div>}
-        >
+      <InfiniteScroll
+        pageStart={0}
+        loadMore={() => {
+          fetchMore({
+            variables: {
+              cursor: pageInfo.endCursor,
+            },
+          });
+        }}
+        hasMore={pageInfo.hasNextPage}
+        loader={<div className="loader" key={0}>Loading ...</div>}
+      >
+        <Stack spacing={2}>
           {items}
-        </InfiniteScroll>
-      </Stack>
+        </Stack>
+      </InfiniteScroll>
     </Container>
   );
 }
