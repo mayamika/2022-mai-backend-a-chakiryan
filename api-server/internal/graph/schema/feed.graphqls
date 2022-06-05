@@ -1,32 +1,29 @@
-type Post {
-  id: ID!
+input PostInput {
   text: String!
 }
 
-type PostEdge {
-  node: Post
-  cursor: String!
+type Post {
+  id: ID!
+  from: User!
+  text: String!
+  createdAt: Time!
 }
 
-type PostPageInfo {
-  hasNextPage: Boolean!
-  hasPreviousPage: Boolean!
-  startCursor: String
-  endCursor: String
-}
-
-type PostConnection {
+type FeedPayload {
   totalCount: Int!
-  pageInfo: PostPageInfo!
-  edges: [PostEdge]
+  hasNextPage: Boolean!
+  scroll: String
+  posts: [Post]
+}
+
+extend type Mutation {
+  publishPost(input: PostInput!): Post!
 }
 
 extend type Query {
   feed(
+    first: Int!
     after: String
-    first: Int
-    before: String
-    last: Int
     search: String
-  ): PostConnection
+  ): FeedPayload!
 }

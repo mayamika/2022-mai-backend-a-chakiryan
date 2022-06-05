@@ -59,6 +59,3 @@ models:
       - github.com/99designs/gqlgen/graphql.Int
       - github.com/99designs/gqlgen/graphql.Int64
       - github.com/99designs/gqlgen/graphql.Int32
-  PostPageInfo:
-    model:
-      - "github.com/mayamika/2022-mai-backend-a-chakiryan/api-server/internal/model/feed.PageInfo"

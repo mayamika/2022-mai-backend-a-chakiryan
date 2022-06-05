@@ -1,25 +1,21 @@
 package feed
 
-type Post struct {
-	ID   string
-	From int
+import "time"
+
+type PostInput struct {
 	Text string
 }
 
-type PostEdge struct {
-	Node   *Post
-	Cursor string
+type Post struct {
+	ID        string
+	From      int
+	Text      string
+	CreatedAt time.Time
 }
 
-type PageInfo struct {
-	HasNextPage     bool
-	HasPreviousPage bool
-	StartCursor     *string
-	EndCursor       *string
-}
-
-type PostConnection struct {
-	TotalCount int
-	PageInfo   PageInfo
-	Edges      []*PostEdge
+type FeedPayload struct {
+	TotalCount  int
+	HasNextPage bool
+	Scroll      *string
+	Posts       []*Post
 }
