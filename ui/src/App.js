@@ -6,6 +6,7 @@ import {
   Routes,
   Route,
   useNavigate,
+  useLocation,
 } from 'react-router-dom';
 
 import {
@@ -41,26 +42,37 @@ const ME = gql`
   }
 `;
 
-function Home() {
+function LoginRedirect({ children }) {
+  const location = useLocation();
   const navigate = useNavigate();
   const [, setSession] = React.useContext(SessionContext);
 
-  const { error, data } = useQuery(ME);
+  const { loading, error } = useQuery(ME);
+
   React.useEffect(() => {
+    if (location.pathname == '/signin' || location.pathname == '/signup') {
+      return;
+    }
+    if (loading) {
+      return;
+    }
+
     if (error) {
       setSession({
         token: null,
       });
-
       navigate('/signin');
-      return;
     }
 
-    if (data) {
-      navigate('/friends');
+    if (location.pathname == '/') {
+      navigate('/feed');
     }
-  }, [error, data]);
+  }, [location, loading, error]);
 
+  return children;
+}
+
+function Home() {
   return (<div />);
 }
 
@@ -68,6 +80,7 @@ import Menu from './components/Menu';
 
 import SignUp from './pages/SignUp';
 import SignIn from './pages/SignIn';
+import Feed from './pages/Feed';
 import User from './pages/User';
 import Friends from './pages/Friends';
 import SearchUsers from './pages/SearchUsers';
@@ -78,29 +91,33 @@ function App() {
     <SessionProvider>
       <ApolloProvider>
         <Router>
-          <CssBaseline />
-          <Box sx={{
-            minHeight: '100vh',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyConent: 'flex-end',
-          }}>
-            <Box sx={{ flexGrow: 1 }}>
-              <Menu />
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/signup" element={<SignUp />} />
-                <Route path="/signin" element={<SignIn />} />
-                <Route path="/u/:login" element={<User />} />
-                <Route path="/friends" element={<Friends />} />
-                <Route path="/search" element={<SearchUsers />} />
-                <Route path="/friend-requests" element={<FriendRequests />} />
-              </Routes>
+          <LoginRedirect>
+            <CssBaseline />
+            <Box sx={{
+              minHeight: '100vh',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyConent: 'flex-end',
+              backgroundColor: 'grey.200',
+            }}>
+              <Box sx={{ flexGrow: 1 }}>
+                <Menu />
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/signup" element={<SignUp />} />
+                  <Route path="/signin" element={<SignIn />} />
+                  <Route path="/feed" element={<Feed />} />
+                  <Route path="/u/:login" element={<User />} />
+                  <Route path="/friends" element={<Friends />} />
+                  <Route path="/search" element={<SearchUsers />} />
+                  <Route path="/friend-requests" element={<FriendRequests />} />
+                </Routes>
+              </Box>
+              <Box sx={{ mb: 1 }}>
+                <Copyright />
+              </Box>
             </Box>
-            <Box sx={{ mb: 1 }}>
-              <Copyright />
-            </Box>
-          </Box>
+          </LoginRedirect>
         </Router>
       </ApolloProvider>
     </SessionProvider>

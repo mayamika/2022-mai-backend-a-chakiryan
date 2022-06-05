@@ -9,7 +9,7 @@ import {
   Button,
   IconButton,
 } from '@mui/material';
-import { Feed, ChatBubble, People } from '@mui/icons-material';
+import { Feed, People, PersonAdd } from '@mui/icons-material';
 
 import {
   Link as RouterLink,
@@ -97,17 +97,17 @@ function Menu() {
             component={RouterLink}
             to="/feed"
           >
-            <Feed fontSize="large" />
+            <Feed fontSize="medium" />
           </IconButton>
-          <IconButton
+          {/* <IconButton
             size="large"
             // edge="end"
             color="inherit"
             component={RouterLink}
             to="/chat"
           >
-            <ChatBubble fontSize="large" />
-          </IconButton>
+            <ChatBubble fontSize="medium" />
+          </IconButton> */}
           <IconButton
             size="large"
             // edge="start"
@@ -115,7 +115,7 @@ function Menu() {
             component={RouterLink}
             to="/friends"
           >
-            <People fontSize="large" />
+            <People fontSize="medium" />
           </IconButton>
           <IconButton
             size="large"
@@ -124,7 +124,7 @@ function Menu() {
             component={RouterLink}
             to="/friend-requests"
           >
-            <People fontSize="small" />
+            <PersonAdd fontSize="medium" />
           </IconButton>
 
           <Stack direction="row" alignItems="center">
