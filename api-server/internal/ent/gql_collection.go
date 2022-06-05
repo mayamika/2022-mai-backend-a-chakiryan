@@ -10,6 +10,71 @@ import (
 )
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (fr *FriendRequestQuery) CollectFields(ctx context.Context, satisfies ...string) (*FriendRequestQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return fr, nil
+	}
+	if err := fr.collectField(ctx, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return fr, nil
+}
+
+func (fr *FriendRequestQuery) collectField(ctx context.Context, op *graphql.OperationContext, field graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	for _, field := range graphql.CollectFields(op, field.Selections, satisfies) {
+		switch field.Name {
+		case "from":
+			var (
+				path  = append(path, field.Name)
+				query = &UserQuery{config: fr.config}
+			)
+			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+				return err
+			}
+			fr.withFrom = query
+		case "to":
+			var (
+				path  = append(path, field.Name)
+				query = &UserQuery{config: fr.config}
+			)
+			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+				return err
+			}
+			fr.withTo = query
+		}
+	}
+	return nil
+}
+
+type friendrequestPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []FriendRequestPaginateOption
+}
+
+func newFriendRequestPaginateArgs(rv map[string]interface{}) *friendrequestPaginateArgs {
+	args := &friendrequestPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
 func (u *UserQuery) CollectFields(ctx context.Context, satisfies ...string) (*UserQuery, error) {
 	fc := graphql.GetFieldContext(ctx)
 	if fc == nil {
@@ -83,49 +148,6 @@ func newUserPaginateArgs(rv map[string]interface{}) *userPaginateArgs {
 				args.opts = append(args.opts, WithUserOrder(v))
 			}
 		}
-	}
-	return args
-}
-
-// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
-func (ua *UserAuthQuery) CollectFields(ctx context.Context, satisfies ...string) (*UserAuthQuery, error) {
-	fc := graphql.GetFieldContext(ctx)
-	if fc == nil {
-		return ua, nil
-	}
-	if err := ua.collectField(ctx, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
-		return nil, err
-	}
-	return ua, nil
-}
-
-func (ua *UserAuthQuery) collectField(ctx context.Context, op *graphql.OperationContext, field graphql.CollectedField, path []string, satisfies ...string) error {
-	path = append([]string(nil), path...)
-	return nil
-}
-
-type userauthPaginateArgs struct {
-	first, last   *int
-	after, before *Cursor
-	opts          []UserAuthPaginateOption
-}
-
-func newUserAuthPaginateArgs(rv map[string]interface{}) *userauthPaginateArgs {
-	args := &userauthPaginateArgs{}
-	if rv == nil {
-		return args
-	}
-	if v := rv[firstField]; v != nil {
-		args.first = v.(*int)
-	}
-	if v := rv[lastField]; v != nil {
-		args.last = v.(*int)
-	}
-	if v := rv[afterField]; v != nil {
-		args.after = v.(*Cursor)
-	}
-	if v := rv[beforeField]; v != nil {
-		args.before = v.(*Cursor)
 	}
 	return args
 }

@@ -14,9 +14,9 @@ var ErrLoginFailed = errors.New("login attempt failed")
 
 func (c *Controller) Login(ctx context.Context, input auth.LoginInput) (*auth.LoginPayload, error) {
 	client := ent.FromContext(ctx)
-	u, err := client.User.Query().Where(
-		user.LoginEQ(input.Login),
-	).Only(ctx)
+	u, err := client.User.Query().
+		Where(user.LoginEQ(input.Login)).
+		Only(ctx)
 	if err != nil {
 		return nil, ErrLoginFailed
 	}
@@ -27,7 +27,7 @@ func (c *Controller) Login(ctx context.Context, input auth.LoginInput) (*auth.Lo
 	}
 	token, err := c.tokenFromUser(u)
 	if err != nil {
-		return nil, fmt.Errorf("can't generate auth token: %w", err)
+		return nil, fmt.Errorf("generate auth token: %w", err)
 	}
 
 	return &auth.LoginPayload{

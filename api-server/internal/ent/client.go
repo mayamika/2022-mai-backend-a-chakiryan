@@ -9,8 +9,8 @@ import (
 
 	"github.com/mayamika/2022-mai-backend-a-chakiryan/api-server/internal/ent/migrate"
 
+	"github.com/mayamika/2022-mai-backend-a-chakiryan/api-server/internal/ent/friendrequest"
 	"github.com/mayamika/2022-mai-backend-a-chakiryan/api-server/internal/ent/user"
-	"github.com/mayamika/2022-mai-backend-a-chakiryan/api-server/internal/ent/userauth"
 
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
@@ -22,10 +22,10 @@ type Client struct {
 	config
 	// Schema is the client for creating, migrating and dropping schema.
 	Schema *migrate.Schema
+	// FriendRequest is the client for interacting with the FriendRequest builders.
+	FriendRequest *FriendRequestClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
-	// UserAuth is the client for interacting with the UserAuth builders.
-	UserAuth *UserAuthClient
 	// additional fields for node api
 	tables tables
 }
@@ -41,8 +41,8 @@ func NewClient(opts ...Option) *Client {
 
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
+	c.FriendRequest = NewFriendRequestClient(c.config)
 	c.User = NewUserClient(c.config)
-	c.UserAuth = NewUserAuthClient(c.config)
 }
 
 // Open opens a database/sql.DB specified by the driver name and
@@ -74,10 +74,10 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:      ctx,
-		config:   cfg,
-		User:     NewUserClient(cfg),
-		UserAuth: NewUserAuthClient(cfg),
+		ctx:           ctx,
+		config:        cfg,
+		FriendRequest: NewFriendRequestClient(cfg),
+		User:          NewUserClient(cfg),
 	}, nil
 }
 
@@ -95,17 +95,17 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:      ctx,
-		config:   cfg,
-		User:     NewUserClient(cfg),
-		UserAuth: NewUserAuthClient(cfg),
+		ctx:           ctx,
+		config:        cfg,
+		FriendRequest: NewFriendRequestClient(cfg),
+		User:          NewUserClient(cfg),
 	}, nil
 }
 
 // Debug returns a new debug-client. It's used to get verbose logging on specific operations.
 //
 //	client.Debug().
-//		User.
+//		FriendRequest.
 //		Query().
 //		Count(ctx)
 //
@@ -128,8 +128,130 @@ func (c *Client) Close() error {
 // Use adds the mutation hooks to all the entity clients.
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
+	c.FriendRequest.Use(hooks...)
 	c.User.Use(hooks...)
-	c.UserAuth.Use(hooks...)
+}
+
+// FriendRequestClient is a client for the FriendRequest schema.
+type FriendRequestClient struct {
+	config
+}
+
+// NewFriendRequestClient returns a client for the FriendRequest from the given config.
+func NewFriendRequestClient(c config) *FriendRequestClient {
+	return &FriendRequestClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `friendrequest.Hooks(f(g(h())))`.
+func (c *FriendRequestClient) Use(hooks ...Hook) {
+	c.hooks.FriendRequest = append(c.hooks.FriendRequest, hooks...)
+}
+
+// Create returns a create builder for FriendRequest.
+func (c *FriendRequestClient) Create() *FriendRequestCreate {
+	mutation := newFriendRequestMutation(c.config, OpCreate)
+	return &FriendRequestCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of FriendRequest entities.
+func (c *FriendRequestClient) CreateBulk(builders ...*FriendRequestCreate) *FriendRequestCreateBulk {
+	return &FriendRequestCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for FriendRequest.
+func (c *FriendRequestClient) Update() *FriendRequestUpdate {
+	mutation := newFriendRequestMutation(c.config, OpUpdate)
+	return &FriendRequestUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *FriendRequestClient) UpdateOne(fr *FriendRequest) *FriendRequestUpdateOne {
+	mutation := newFriendRequestMutation(c.config, OpUpdateOne, withFriendRequest(fr))
+	return &FriendRequestUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *FriendRequestClient) UpdateOneID(id int) *FriendRequestUpdateOne {
+	mutation := newFriendRequestMutation(c.config, OpUpdateOne, withFriendRequestID(id))
+	return &FriendRequestUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for FriendRequest.
+func (c *FriendRequestClient) Delete() *FriendRequestDelete {
+	mutation := newFriendRequestMutation(c.config, OpDelete)
+	return &FriendRequestDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a delete builder for the given entity.
+func (c *FriendRequestClient) DeleteOne(fr *FriendRequest) *FriendRequestDeleteOne {
+	return c.DeleteOneID(fr.ID)
+}
+
+// DeleteOneID returns a delete builder for the given id.
+func (c *FriendRequestClient) DeleteOneID(id int) *FriendRequestDeleteOne {
+	builder := c.Delete().Where(friendrequest.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &FriendRequestDeleteOne{builder}
+}
+
+// Query returns a query builder for FriendRequest.
+func (c *FriendRequestClient) Query() *FriendRequestQuery {
+	return &FriendRequestQuery{
+		config: c.config,
+	}
+}
+
+// Get returns a FriendRequest entity by its id.
+func (c *FriendRequestClient) Get(ctx context.Context, id int) (*FriendRequest, error) {
+	return c.Query().Where(friendrequest.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *FriendRequestClient) GetX(ctx context.Context, id int) *FriendRequest {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryFrom queries the from edge of a FriendRequest.
+func (c *FriendRequestClient) QueryFrom(fr *FriendRequest) *UserQuery {
+	query := &UserQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := fr.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(friendrequest.Table, friendrequest.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, friendrequest.FromTable, friendrequest.FromColumn),
+		)
+		fromV = sqlgraph.Neighbors(fr.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryTo queries the to edge of a FriendRequest.
+func (c *FriendRequestClient) QueryTo(fr *FriendRequest) *UserQuery {
+	query := &UserQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := fr.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(friendrequest.Table, friendrequest.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, friendrequest.ToTable, friendrequest.ToColumn),
+		)
+		fromV = sqlgraph.Neighbors(fr.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *FriendRequestClient) Hooks() []Hook {
+	return c.hooks.FriendRequest
 }
 
 // UserClient is a client for the User schema.
@@ -236,94 +358,4 @@ func (c *UserClient) QueryFriends(u *User) *UserQuery {
 // Hooks returns the client hooks.
 func (c *UserClient) Hooks() []Hook {
 	return c.hooks.User
-}
-
-// UserAuthClient is a client for the UserAuth schema.
-type UserAuthClient struct {
-	config
-}
-
-// NewUserAuthClient returns a client for the UserAuth from the given config.
-func NewUserAuthClient(c config) *UserAuthClient {
-	return &UserAuthClient{config: c}
-}
-
-// Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `userauth.Hooks(f(g(h())))`.
-func (c *UserAuthClient) Use(hooks ...Hook) {
-	c.hooks.UserAuth = append(c.hooks.UserAuth, hooks...)
-}
-
-// Create returns a create builder for UserAuth.
-func (c *UserAuthClient) Create() *UserAuthCreate {
-	mutation := newUserAuthMutation(c.config, OpCreate)
-	return &UserAuthCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// CreateBulk returns a builder for creating a bulk of UserAuth entities.
-func (c *UserAuthClient) CreateBulk(builders ...*UserAuthCreate) *UserAuthCreateBulk {
-	return &UserAuthCreateBulk{config: c.config, builders: builders}
-}
-
-// Update returns an update builder for UserAuth.
-func (c *UserAuthClient) Update() *UserAuthUpdate {
-	mutation := newUserAuthMutation(c.config, OpUpdate)
-	return &UserAuthUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOne returns an update builder for the given entity.
-func (c *UserAuthClient) UpdateOne(ua *UserAuth) *UserAuthUpdateOne {
-	mutation := newUserAuthMutation(c.config, OpUpdateOne, withUserAuth(ua))
-	return &UserAuthUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOneID returns an update builder for the given id.
-func (c *UserAuthClient) UpdateOneID(id int) *UserAuthUpdateOne {
-	mutation := newUserAuthMutation(c.config, OpUpdateOne, withUserAuthID(id))
-	return &UserAuthUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// Delete returns a delete builder for UserAuth.
-func (c *UserAuthClient) Delete() *UserAuthDelete {
-	mutation := newUserAuthMutation(c.config, OpDelete)
-	return &UserAuthDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// DeleteOne returns a delete builder for the given entity.
-func (c *UserAuthClient) DeleteOne(ua *UserAuth) *UserAuthDeleteOne {
-	return c.DeleteOneID(ua.ID)
-}
-
-// DeleteOneID returns a delete builder for the given id.
-func (c *UserAuthClient) DeleteOneID(id int) *UserAuthDeleteOne {
-	builder := c.Delete().Where(userauth.ID(id))
-	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
-	return &UserAuthDeleteOne{builder}
-}
-
-// Query returns a query builder for UserAuth.
-func (c *UserAuthClient) Query() *UserAuthQuery {
-	return &UserAuthQuery{
-		config: c.config,
-	}
-}
-
-// Get returns a UserAuth entity by its id.
-func (c *UserAuthClient) Get(ctx context.Context, id int) (*UserAuth, error) {
-	return c.Query().Where(userauth.ID(id)).Only(ctx)
-}
-
-// GetX is like Get, but panics if an error occurs.
-func (c *UserAuthClient) GetX(ctx context.Context, id int) *UserAuth {
-	obj, err := c.Get(ctx, id)
-	if err != nil {
-		panic(err)
-	}
-	return obj
-}
-
-// Hooks returns the client hooks.
-func (c *UserAuthClient) Hooks() []Hook {
-	return c.hooks.UserAuth
 }

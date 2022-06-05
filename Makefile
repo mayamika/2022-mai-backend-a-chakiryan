@@ -127,7 +127,7 @@ start: container-env \
 
 .PHONY: up
 up:
-	docker-compose up
+	docker-compose up -d --remove-orphans
 
 .PHONY: down
 down:

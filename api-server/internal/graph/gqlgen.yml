@@ -37,8 +37,9 @@ skip_validation: true
 autobind:
   - "github.com/mayamika/2022-mai-backend-a-chakiryan/api-server/internal/ent"
   - "github.com/mayamika/2022-mai-backend-a-chakiryan/api-server/internal/ent/user"
-  - "github.com/mayamika/2022-mai-backend-a-chakiryan/api-server/internal/ent/userauth"
+  - "github.com/mayamika/2022-mai-backend-a-chakiryan/api-server/internal/ent/friendrequest"
   - "github.com/mayamika/2022-mai-backend-a-chakiryan/api-server/internal/model/auth"
+  - "github.com/mayamika/2022-mai-backend-a-chakiryan/api-server/internal/model/feed"
 
 # This section declares type mapping between the GraphQL and go type systems
 #
@@ -49,6 +50,7 @@ models:
   ID:
     model:
       - github.com/99designs/gqlgen/graphql.IntID
+      - github.com/99designs/gqlgen/graphql.ID
   Node:
     model:
       - "github.com/mayamika/2022-mai-backend-a-chakiryan/api-server/internal/ent.Noder"
@@ -57,3 +59,6 @@ models:
       - github.com/99designs/gqlgen/graphql.Int
       - github.com/99designs/gqlgen/graphql.Int64
       - github.com/99designs/gqlgen/graphql.Int32
+  PostPageInfo:
+    model:
+      - "github.com/mayamika/2022-mai-backend-a-chakiryan/api-server/internal/model/feed.PageInfo"

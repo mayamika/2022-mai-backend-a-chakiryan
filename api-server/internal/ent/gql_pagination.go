@@ -14,8 +14,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/errcode"
+	"github.com/mayamika/2022-mai-backend-a-chakiryan/api-server/internal/ent/friendrequest"
 	"github.com/mayamika/2022-mai-backend-a-chakiryan/api-server/internal/ent/user"
-	"github.com/mayamika/2022-mai-backend-a-chakiryan/api-server/internal/ent/userauth"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 	"github.com/vmihailenco/msgpack/v5"
 )
@@ -240,6 +240,239 @@ func paginateLimit(first, last *int) int {
 		limit = *last + 1
 	}
 	return limit
+}
+
+// FriendRequestEdge is the edge representation of FriendRequest.
+type FriendRequestEdge struct {
+	Node   *FriendRequest `json:"node"`
+	Cursor Cursor         `json:"cursor"`
+}
+
+// FriendRequestConnection is the connection containing edges to FriendRequest.
+type FriendRequestConnection struct {
+	Edges      []*FriendRequestEdge `json:"edges"`
+	PageInfo   PageInfo             `json:"pageInfo"`
+	TotalCount int                  `json:"totalCount"`
+}
+
+func (c *FriendRequestConnection) build(nodes []*FriendRequest, pager *friendrequestPager, first, last *int) {
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *FriendRequest
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *FriendRequest {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *FriendRequest {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*FriendRequestEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &FriendRequestEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// FriendRequestPaginateOption enables pagination customization.
+type FriendRequestPaginateOption func(*friendrequestPager) error
+
+// WithFriendRequestOrder configures pagination ordering.
+func WithFriendRequestOrder(order *FriendRequestOrder) FriendRequestPaginateOption {
+	if order == nil {
+		order = DefaultFriendRequestOrder
+	}
+	o := *order
+	return func(pager *friendrequestPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultFriendRequestOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithFriendRequestFilter configures pagination filter.
+func WithFriendRequestFilter(filter func(*FriendRequestQuery) (*FriendRequestQuery, error)) FriendRequestPaginateOption {
+	return func(pager *friendrequestPager) error {
+		if filter == nil {
+			return errors.New("FriendRequestQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type friendrequestPager struct {
+	order  *FriendRequestOrder
+	filter func(*FriendRequestQuery) (*FriendRequestQuery, error)
+}
+
+func newFriendRequestPager(opts []FriendRequestPaginateOption) (*friendrequestPager, error) {
+	pager := &friendrequestPager{}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultFriendRequestOrder
+	}
+	return pager, nil
+}
+
+func (p *friendrequestPager) applyFilter(query *FriendRequestQuery) (*FriendRequestQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *friendrequestPager) toCursor(fr *FriendRequest) Cursor {
+	return p.order.Field.toCursor(fr)
+}
+
+func (p *friendrequestPager) applyCursors(query *FriendRequestQuery, after, before *Cursor) *FriendRequestQuery {
+	for _, predicate := range cursorsToPredicates(
+		p.order.Direction, after, before,
+		p.order.Field.field, DefaultFriendRequestOrder.Field.field,
+	) {
+		query = query.Where(predicate)
+	}
+	return query
+}
+
+func (p *friendrequestPager) applyOrder(query *FriendRequestQuery, reverse bool) *FriendRequestQuery {
+	direction := p.order.Direction
+	if reverse {
+		direction = direction.reverse()
+	}
+	query = query.Order(direction.orderFunc(p.order.Field.field))
+	if p.order.Field != DefaultFriendRequestOrder.Field {
+		query = query.Order(direction.orderFunc(DefaultFriendRequestOrder.Field.field))
+	}
+	return query
+}
+
+func (p *friendrequestPager) orderExpr(reverse bool) sql.Querier {
+	direction := p.order.Direction
+	if reverse {
+		direction = direction.reverse()
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.field).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultFriendRequestOrder.Field {
+			b.Comma().Ident(DefaultFriendRequestOrder.Field.field).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to FriendRequest.
+func (fr *FriendRequestQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...FriendRequestPaginateOption,
+) (*FriendRequestConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newFriendRequestPager(opts)
+	if err != nil {
+		return nil, err
+	}
+	if fr, err = pager.applyFilter(fr); err != nil {
+		return nil, err
+	}
+	conn := &FriendRequestConnection{Edges: []*FriendRequestEdge{}}
+	if !hasCollectedField(ctx, edgesField) || first != nil && *first == 0 || last != nil && *last == 0 {
+		if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+			if conn.TotalCount, err = fr.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+		return conn, nil
+	}
+
+	if (after != nil || first != nil || before != nil || last != nil) && hasCollectedField(ctx, totalCountField) {
+		count, err := fr.Clone().Count(ctx)
+		if err != nil {
+			return nil, err
+		}
+		conn.TotalCount = count
+	}
+
+	fr = pager.applyCursors(fr, after, before)
+	fr = pager.applyOrder(fr, last != nil)
+	if limit := paginateLimit(first, last); limit != 0 {
+		fr.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := fr.collectField(ctx, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+
+	nodes, err := fr.All(ctx)
+	if err != nil || len(nodes) == 0 {
+		return conn, err
+	}
+	conn.build(nodes, pager, first, last)
+	return conn, nil
+}
+
+// FriendRequestOrderField defines the ordering field of FriendRequest.
+type FriendRequestOrderField struct {
+	field    string
+	toCursor func(*FriendRequest) Cursor
+}
+
+// FriendRequestOrder defines the ordering of FriendRequest.
+type FriendRequestOrder struct {
+	Direction OrderDirection           `json:"direction"`
+	Field     *FriendRequestOrderField `json:"field"`
+}
+
+// DefaultFriendRequestOrder is the default ordering of FriendRequest.
+var DefaultFriendRequestOrder = &FriendRequestOrder{
+	Direction: OrderDirectionAsc,
+	Field: &FriendRequestOrderField{
+		field: friendrequest.FieldID,
+		toCursor: func(fr *FriendRequest) Cursor {
+			return Cursor{ID: fr.ID}
+		},
+	},
+}
+
+// ToEdge converts FriendRequest into FriendRequestEdge.
+func (fr *FriendRequest) ToEdge(order *FriendRequestOrder) *FriendRequestEdge {
+	if order == nil {
+		order = DefaultFriendRequestOrder
+	}
+	return &FriendRequestEdge{
+		Node:   fr,
+		Cursor: order.Field.toCursor(fr),
+	}
 }
 
 // UserEdge is the edge representation of User.
@@ -529,238 +762,5 @@ func (u *User) ToEdge(order *UserOrder) *UserEdge {
 	return &UserEdge{
 		Node:   u,
 		Cursor: order.Field.toCursor(u),
-	}
-}
-
-// UserAuthEdge is the edge representation of UserAuth.
-type UserAuthEdge struct {
-	Node   *UserAuth `json:"node"`
-	Cursor Cursor    `json:"cursor"`
-}
-
-// UserAuthConnection is the connection containing edges to UserAuth.
-type UserAuthConnection struct {
-	Edges      []*UserAuthEdge `json:"edges"`
-	PageInfo   PageInfo        `json:"pageInfo"`
-	TotalCount int             `json:"totalCount"`
-}
-
-func (c *UserAuthConnection) build(nodes []*UserAuth, pager *userauthPager, first, last *int) {
-	if first != nil && *first+1 == len(nodes) {
-		c.PageInfo.HasNextPage = true
-		nodes = nodes[:len(nodes)-1]
-	} else if last != nil && *last+1 == len(nodes) {
-		c.PageInfo.HasPreviousPage = true
-		nodes = nodes[:len(nodes)-1]
-	}
-	var nodeAt func(int) *UserAuth
-	if last != nil {
-		n := len(nodes) - 1
-		nodeAt = func(i int) *UserAuth {
-			return nodes[n-i]
-		}
-	} else {
-		nodeAt = func(i int) *UserAuth {
-			return nodes[i]
-		}
-	}
-	c.Edges = make([]*UserAuthEdge, len(nodes))
-	for i := range nodes {
-		node := nodeAt(i)
-		c.Edges[i] = &UserAuthEdge{
-			Node:   node,
-			Cursor: pager.toCursor(node),
-		}
-	}
-	if l := len(c.Edges); l > 0 {
-		c.PageInfo.StartCursor = &c.Edges[0].Cursor
-		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
-	}
-	if c.TotalCount == 0 {
-		c.TotalCount = len(nodes)
-	}
-}
-
-// UserAuthPaginateOption enables pagination customization.
-type UserAuthPaginateOption func(*userauthPager) error
-
-// WithUserAuthOrder configures pagination ordering.
-func WithUserAuthOrder(order *UserAuthOrder) UserAuthPaginateOption {
-	if order == nil {
-		order = DefaultUserAuthOrder
-	}
-	o := *order
-	return func(pager *userauthPager) error {
-		if err := o.Direction.Validate(); err != nil {
-			return err
-		}
-		if o.Field == nil {
-			o.Field = DefaultUserAuthOrder.Field
-		}
-		pager.order = &o
-		return nil
-	}
-}
-
-// WithUserAuthFilter configures pagination filter.
-func WithUserAuthFilter(filter func(*UserAuthQuery) (*UserAuthQuery, error)) UserAuthPaginateOption {
-	return func(pager *userauthPager) error {
-		if filter == nil {
-			return errors.New("UserAuthQuery filter cannot be nil")
-		}
-		pager.filter = filter
-		return nil
-	}
-}
-
-type userauthPager struct {
-	order  *UserAuthOrder
-	filter func(*UserAuthQuery) (*UserAuthQuery, error)
-}
-
-func newUserAuthPager(opts []UserAuthPaginateOption) (*userauthPager, error) {
-	pager := &userauthPager{}
-	for _, opt := range opts {
-		if err := opt(pager); err != nil {
-			return nil, err
-		}
-	}
-	if pager.order == nil {
-		pager.order = DefaultUserAuthOrder
-	}
-	return pager, nil
-}
-
-func (p *userauthPager) applyFilter(query *UserAuthQuery) (*UserAuthQuery, error) {
-	if p.filter != nil {
-		return p.filter(query)
-	}
-	return query, nil
-}
-
-func (p *userauthPager) toCursor(ua *UserAuth) Cursor {
-	return p.order.Field.toCursor(ua)
-}
-
-func (p *userauthPager) applyCursors(query *UserAuthQuery, after, before *Cursor) *UserAuthQuery {
-	for _, predicate := range cursorsToPredicates(
-		p.order.Direction, after, before,
-		p.order.Field.field, DefaultUserAuthOrder.Field.field,
-	) {
-		query = query.Where(predicate)
-	}
-	return query
-}
-
-func (p *userauthPager) applyOrder(query *UserAuthQuery, reverse bool) *UserAuthQuery {
-	direction := p.order.Direction
-	if reverse {
-		direction = direction.reverse()
-	}
-	query = query.Order(direction.orderFunc(p.order.Field.field))
-	if p.order.Field != DefaultUserAuthOrder.Field {
-		query = query.Order(direction.orderFunc(DefaultUserAuthOrder.Field.field))
-	}
-	return query
-}
-
-func (p *userauthPager) orderExpr(reverse bool) sql.Querier {
-	direction := p.order.Direction
-	if reverse {
-		direction = direction.reverse()
-	}
-	return sql.ExprFunc(func(b *sql.Builder) {
-		b.Ident(p.order.Field.field).Pad().WriteString(string(direction))
-		if p.order.Field != DefaultUserAuthOrder.Field {
-			b.Comma().Ident(DefaultUserAuthOrder.Field.field).Pad().WriteString(string(direction))
-		}
-	})
-}
-
-// Paginate executes the query and returns a relay based cursor connection to UserAuth.
-func (ua *UserAuthQuery) Paginate(
-	ctx context.Context, after *Cursor, first *int,
-	before *Cursor, last *int, opts ...UserAuthPaginateOption,
-) (*UserAuthConnection, error) {
-	if err := validateFirstLast(first, last); err != nil {
-		return nil, err
-	}
-	pager, err := newUserAuthPager(opts)
-	if err != nil {
-		return nil, err
-	}
-	if ua, err = pager.applyFilter(ua); err != nil {
-		return nil, err
-	}
-	conn := &UserAuthConnection{Edges: []*UserAuthEdge{}}
-	if !hasCollectedField(ctx, edgesField) || first != nil && *first == 0 || last != nil && *last == 0 {
-		if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
-			if conn.TotalCount, err = ua.Count(ctx); err != nil {
-				return nil, err
-			}
-			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
-			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
-		}
-		return conn, nil
-	}
-
-	if (after != nil || first != nil || before != nil || last != nil) && hasCollectedField(ctx, totalCountField) {
-		count, err := ua.Clone().Count(ctx)
-		if err != nil {
-			return nil, err
-		}
-		conn.TotalCount = count
-	}
-
-	ua = pager.applyCursors(ua, after, before)
-	ua = pager.applyOrder(ua, last != nil)
-	if limit := paginateLimit(first, last); limit != 0 {
-		ua.Limit(limit)
-	}
-	if field := collectedField(ctx, edgesField, nodeField); field != nil {
-		if err := ua.collectField(ctx, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
-			return nil, err
-		}
-	}
-
-	nodes, err := ua.All(ctx)
-	if err != nil || len(nodes) == 0 {
-		return conn, err
-	}
-	conn.build(nodes, pager, first, last)
-	return conn, nil
-}
-
-// UserAuthOrderField defines the ordering field of UserAuth.
-type UserAuthOrderField struct {
-	field    string
-	toCursor func(*UserAuth) Cursor
-}
-
-// UserAuthOrder defines the ordering of UserAuth.
-type UserAuthOrder struct {
-	Direction OrderDirection      `json:"direction"`
-	Field     *UserAuthOrderField `json:"field"`
-}
-
-// DefaultUserAuthOrder is the default ordering of UserAuth.
-var DefaultUserAuthOrder = &UserAuthOrder{
-	Direction: OrderDirectionAsc,
-	Field: &UserAuthOrderField{
-		field: userauth.FieldID,
-		toCursor: func(ua *UserAuth) Cursor {
-			return Cursor{ID: ua.ID}
-		},
-	},
-}
-
-// ToEdge converts UserAuth into UserAuthEdge.
-func (ua *UserAuth) ToEdge(order *UserAuthOrder) *UserAuthEdge {
-	if order == nil {
-		order = DefaultUserAuthOrder
-	}
-	return &UserAuthEdge{
-		Node:   ua,
-		Cursor: order.Field.toCursor(ua),
 	}
 }

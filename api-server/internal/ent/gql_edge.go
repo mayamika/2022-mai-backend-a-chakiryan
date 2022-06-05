@@ -4,6 +4,22 @@ package ent
 
 import "context"
 
+func (fr *FriendRequest) From(ctx context.Context) (*User, error) {
+	result, err := fr.Edges.FromOrErr()
+	if IsNotLoaded(err) {
+		result, err = fr.QueryFrom().Only(ctx)
+	}
+	return result, err
+}
+
+func (fr *FriendRequest) To(ctx context.Context) (*User, error) {
+	result, err := fr.Edges.ToOrErr()
+	if IsNotLoaded(err) {
+		result, err = fr.QueryTo().Only(ctx)
+	}
+	return result, err
+}
+
 func (u *User) Friends(ctx context.Context) ([]*User, error) {
 	result, err := u.Edges.FriendsOrErr()
 	if IsNotLoaded(err) {

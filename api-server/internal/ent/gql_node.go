@@ -15,8 +15,8 @@ import (
 	"entgo.io/ent/dialect/sql/schema"
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/hashicorp/go-multierror"
+	"github.com/mayamika/2022-mai-backend-a-chakiryan/api-server/internal/ent/friendrequest"
 	"github.com/mayamika/2022-mai-backend-a-chakiryan/api-server/internal/ent/user"
-	"github.com/mayamika/2022-mai-backend-a-chakiryan/api-server/internal/ent/userauth"
 	"golang.org/x/sync/semaphore"
 )
 
@@ -47,11 +47,41 @@ type Edge struct {
 	IDs  []int  `json:"ids,omitempty"`  // node ids (where this edge point to).
 }
 
+func (fr *FriendRequest) Node(ctx context.Context) (node *Node, err error) {
+	node = &Node{
+		ID:     fr.ID,
+		Type:   "FriendRequest",
+		Fields: make([]*Field, 0),
+		Edges:  make([]*Edge, 2),
+	}
+	node.Edges[0] = &Edge{
+		Type: "User",
+		Name: "from",
+	}
+	err = fr.QueryFrom().
+		Select(user.FieldID).
+		Scan(ctx, &node.Edges[0].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[1] = &Edge{
+		Type: "User",
+		Name: "to",
+	}
+	err = fr.QueryTo().
+		Select(user.FieldID).
+		Scan(ctx, &node.Edges[1].IDs)
+	if err != nil {
+		return nil, err
+	}
+	return node, nil
+}
+
 func (u *User) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
 		ID:     u.ID,
 		Type:   "User",
-		Fields: make([]*Field, 4),
+		Fields: make([]*Field, 5),
 		Edges:  make([]*Edge, 1),
 	}
 	var buf []byte
@@ -63,10 +93,18 @@ func (u *User) Node(ctx context.Context) (node *Node, err error) {
 		Name:  "login",
 		Value: string(buf),
 	}
-	if buf, err = json.Marshal(u.Name); err != nil {
+	if buf, err = json.Marshal(u.Email); err != nil {
 		return nil, err
 	}
 	node.Fields[1] = &Field{
+		Type:  "string",
+		Name:  "email",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(u.Name); err != nil {
+		return nil, err
+	}
+	node.Fields[2] = &Field{
 		Type:  "string",
 		Name:  "name",
 		Value: string(buf),
@@ -74,7 +112,7 @@ func (u *User) Node(ctx context.Context) (node *Node, err error) {
 	if buf, err = json.Marshal(u.Surname); err != nil {
 		return nil, err
 	}
-	node.Fields[2] = &Field{
+	node.Fields[3] = &Field{
 		Type:  "string",
 		Name:  "surname",
 		Value: string(buf),
@@ -82,7 +120,7 @@ func (u *User) Node(ctx context.Context) (node *Node, err error) {
 	if buf, err = json.Marshal(u.PasswordHash); err != nil {
 		return nil, err
 	}
-	node.Fields[3] = &Field{
+	node.Fields[4] = &Field{
 		Type:  "string",
 		Name:  "password_hash",
 		Value: string(buf),
@@ -96,16 +134,6 @@ func (u *User) Node(ctx context.Context) (node *Node, err error) {
 		Scan(ctx, &node.Edges[0].IDs)
 	if err != nil {
 		return nil, err
-	}
-	return node, nil
-}
-
-func (ua *UserAuth) Node(ctx context.Context) (node *Node, err error) {
-	node = &Node{
-		ID:     ua.ID,
-		Type:   "UserAuth",
-		Fields: make([]*Field, 0),
-		Edges:  make([]*Edge, 0),
 	}
 	return node, nil
 }
@@ -177,10 +205,10 @@ func (c *Client) Noder(ctx context.Context, id int, opts ...NodeOption) (_ Noder
 
 func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error) {
 	switch table {
-	case user.Table:
-		query := c.User.Query().
-			Where(user.ID(id))
-		query, err := query.CollectFields(ctx, "User")
+	case friendrequest.Table:
+		query := c.FriendRequest.Query().
+			Where(friendrequest.ID(id))
+		query, err := query.CollectFields(ctx, "FriendRequest")
 		if err != nil {
 			return nil, err
 		}
@@ -189,10 +217,10 @@ func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error)
 			return nil, err
 		}
 		return n, nil
-	case userauth.Table:
-		query := c.UserAuth.Query().
-			Where(userauth.ID(id))
-		query, err := query.CollectFields(ctx, "UserAuth")
+	case user.Table:
+		query := c.User.Query().
+			Where(user.ID(id))
+		query, err := query.CollectFields(ctx, "User")
 		if err != nil {
 			return nil, err
 		}
@@ -274,10 +302,10 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 		idmap[id] = append(idmap[id], &noders[i])
 	}
 	switch table {
-	case user.Table:
-		query := c.User.Query().
-			Where(user.IDIn(ids...))
-		query, err := query.CollectFields(ctx, "User")
+	case friendrequest.Table:
+		query := c.FriendRequest.Query().
+			Where(friendrequest.IDIn(ids...))
+		query, err := query.CollectFields(ctx, "FriendRequest")
 		if err != nil {
 			return nil, err
 		}
@@ -290,10 +318,10 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 				*noder = node
 			}
 		}
-	case userauth.Table:
-		query := c.UserAuth.Query().
-			Where(userauth.IDIn(ids...))
-		query, err := query.CollectFields(ctx, "UserAuth")
+	case user.Table:
+		query := c.User.Query().
+			Where(user.IDIn(ids...))
+		query, err := query.CollectFields(ctx, "User")
 		if err != nil {
 			return nil, err
 		}

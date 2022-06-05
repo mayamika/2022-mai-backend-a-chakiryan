@@ -9,6 +9,19 @@ import (
 	"github.com/mayamika/2022-mai-backend-a-chakiryan/api-server/internal/ent"
 )
 
+// The FriendRequestFunc type is an adapter to allow the use of ordinary
+// function as FriendRequest mutator.
+type FriendRequestFunc func(context.Context, *ent.FriendRequestMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f FriendRequestFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.FriendRequestMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.FriendRequestMutation", m)
+	}
+	return f(ctx, mv)
+}
+
 // The UserFunc type is an adapter to allow the use of ordinary
 // function as User mutator.
 type UserFunc func(context.Context, *ent.UserMutation) (ent.Value, error)
@@ -18,19 +31,6 @@ func (f UserFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error)
 	mv, ok := m.(*ent.UserMutation)
 	if !ok {
 		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.UserMutation", m)
-	}
-	return f(ctx, mv)
-}
-
-// The UserAuthFunc type is an adapter to allow the use of ordinary
-// function as UserAuth mutator.
-type UserAuthFunc func(context.Context, *ent.UserAuthMutation) (ent.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f UserAuthFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	mv, ok := m.(*ent.UserAuthMutation)
-	if !ok {
-		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.UserAuthMutation", m)
 	}
 	return f(ctx, mv)
 }

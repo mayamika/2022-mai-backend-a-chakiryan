@@ -26,22 +26,23 @@ func (c *Controller) Register(ctx context.Context, input auth.RegisterInput) (*a
 
 	passwordHash, err := c.passwordHash(input.Password)
 	if err != nil {
-		return nil, fmt.Errorf("can't generate password hash: %w", err)
+		return nil, fmt.Errorf("generate password hash: %w", err)
 	}
 
 	u, err := client.User.Create().
 		SetLogin(input.Login).
+		SetEmail(input.Email).
 		SetPasswordHash(passwordHash).
 		SetName(input.Name).
 		SetSurname(input.Surname).
 		Save(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("can't save user: %w", err)
+		return nil, fmt.Errorf("save user: %w", err)
 	}
 
 	token, err := c.tokenFromUser(u)
 	if err != nil {
-		return nil, fmt.Errorf("can't generate auth token: %w", err)
+		return nil, fmt.Errorf("generate auth token: %w", err)
 	}
 
 	return &auth.RegisterPayload{

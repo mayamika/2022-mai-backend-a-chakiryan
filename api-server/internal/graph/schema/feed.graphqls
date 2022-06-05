@@ -1,0 +1,32 @@
+type Post {
+  id: ID!
+  text: String!
+}
+
+type PostEdge {
+  node: Post
+  cursor: String!
+}
+
+type PostPageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: String
+  endCursor: String
+}
+
+type PostConnection {
+  totalCount: Int!
+  pageInfo: PostPageInfo!
+  edges: [PostEdge]
+}
+
+extend type Query {
+  feed(
+    after: String
+    first: Int
+    before: String
+    last: Int
+    search: String
+  ): PostConnection
+}
