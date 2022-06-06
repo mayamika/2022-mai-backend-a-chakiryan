@@ -132,3 +132,6 @@ up:
 .PHONY: down
 down:
 	docker-compose down
+
+.PHONY: build
+	docker-compose build

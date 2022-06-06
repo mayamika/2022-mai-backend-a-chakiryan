@@ -35,7 +35,7 @@ function SignUp() {
   const loginRe = /^[a-zA-Z][a-zA-Z0-9]*$/;
   const loginValid = loginRe.test(login);
 
-  const nameRe = /^[A-Z][a-z]*$/;
+  const nameRe = /^([A-ZА-Я][a-zа-я]*)+$/u;
   const nameValid = nameRe.test(name);
   const surnameValid = nameRe.test(surname);
 
