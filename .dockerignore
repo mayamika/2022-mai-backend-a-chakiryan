@@ -1,6 +1,7 @@
 *
 !/cmd
 !/deploy
+!/api-server
 !/ui
 !/go.mod
 !/go.sum

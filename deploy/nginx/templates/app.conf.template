@@ -6,7 +6,7 @@ server {
         try_files $uri $uri/ /index.html;
     }
 
-    location /api {
+    location /query {
         proxy_pass ${API_SERVER_ADDR};
     }
 }
