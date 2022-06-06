@@ -42,6 +42,7 @@ function SearchUsers() {
     variables: {
       search: (query) ? query : null,
     },
+    fetchPolicy: 'network-only',
   });
 
   if (error) {

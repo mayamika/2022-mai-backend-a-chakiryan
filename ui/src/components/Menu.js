@@ -15,7 +15,12 @@ import {
   MenuItem,
   IconButton,
 } from '@mui/material';
-import { Feed, People, PersonAdd } from '@mui/icons-material';
+
+import {
+  Feed,
+  People,
+  PersonAdd,
+} from '@mui/icons-material';
 
 import {
   Link as RouterLink,

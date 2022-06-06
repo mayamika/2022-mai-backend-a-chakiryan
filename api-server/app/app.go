@@ -52,11 +52,16 @@ func New(ctx context.Context, c Config, logger *zap.Logger) (*App, error) {
 		logger.Warn("ping opensearch cluster failed", zap.Error(err))
 	}
 
+	feedController, err := feed.NewController(ctx, opensearchClient)
+	if err != nil {
+		return nil, fmt.Errorf("open feed controller: %w", err)
+	}
+
 	a := &App{
 		client:           client,
 		authController:   auth.NewController(),
 		friendController: friend.NewController(),
-		feedController:   feed.NewController(opensearchClient),
+		feedController:   feedController,
 	}
 
 	r := a.routes()
