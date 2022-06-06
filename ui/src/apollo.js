@@ -30,6 +30,8 @@ function ApolloProvider({ children }) {
     typePolicies: {
       Query: {
         fields: {
+          users: relayStylePagination(),
+          friendRequests: relayStylePagination(),
           feed: {
             merge(existing, incoming, { readField }) {
               const posts = existing ? { ...existing.posts } : {};
