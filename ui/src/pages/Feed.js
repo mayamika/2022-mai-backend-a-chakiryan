@@ -180,7 +180,6 @@ function Feed() {
     variables: {
       search: (search) ? search : null,
     },
-    fetchPolicy: 'network-only',
   });
 
   if (error) {
