@@ -6,7 +6,13 @@ import {
   Typography,
   Stack,
   Box,
+  Popper,
+  Grow,
+  Paper,
   Button,
+  ClickAwayListener,
+  MenuList,
+  MenuItem,
   IconButton,
 } from '@mui/material';
 import { Feed, People, PersonAdd } from '@mui/icons-material';
@@ -52,19 +58,30 @@ function Menu() {
   const [, setSession] = React.useContext(SessionContext);
   const navigate = useNavigate();
 
-  const logout = () => {
-    setSession({
-      token: null,
-    });
-
-    navigate('/');
-  };
   const searchUsers = (query) => {
     const loc = {
       pathname: '/search',
       search: `?${createSearchParams({ query: query })}`,
     };
     navigate(loc);
+  };
+
+  const [open, setOpen] = React.useState(false);
+  const anchorRef = React.useRef(null);
+
+  const handleClose = (e) => {
+    if (anchorRef.current && anchorRef.current.contains(e.target)) {
+      return;
+    }
+    setOpen(false);
+  };
+  const handleLogout = (e) => {
+    handleClose(e);
+
+    setSession({
+      token: null,
+    });
+    navigate('/');
   };
 
   return (
@@ -128,18 +145,59 @@ function Menu() {
           </IconButton>
 
           <Stack direction="row" alignItems="center">
-            <UserAvatar
-              user={user}
-              sx={{ m: 1 }}
-            />
-            <Typography
-              variant="h6"
-              noWrap
-              component="div"
+            <Button
+              ref={anchorRef}
+              onClick={(e) => {
+                setOpen((prevOpen) => !prevOpen);
+              }}
+              color='inherit'
+              size="small"
+              startIcon={
+                <UserAvatar
+                  user={user}
+                  sx={{ m: 1 }}
+                />
+              }
+              sx={{
+                textTransform: 'none',
+              }}
             >
-              {user.name} {user.surname}
-            </Typography>
-            <Button onClick={logout} color="inherit">Logout</Button>
+              <Typography
+                variant="h6"
+                noWrap
+                component="div"
+              >
+                {user.name} {user.surname}
+              </Typography>
+            </Button>
+            <Popper
+              open={open}
+              anchorEl={anchorRef.current}
+              role={undefined}
+              placement="bottom-start"
+              transition
+              disablePortal
+            >
+              {({ TransitionProps, placement }) => (
+                <Grow
+                  {...TransitionProps}
+                  style={{
+                    transformOrigin:
+                      placement === 'bottom-start' ? 'left top' : 'left bottom',
+                  }}
+                >
+                  <Paper>
+                    <ClickAwayListener onClickAway={handleClose}>
+                      <MenuList
+                        autoFocusItem={open}
+                      >
+                        <MenuItem onClick={handleLogout}>Logout</MenuItem>
+                      </MenuList>
+                    </ClickAwayListener>
+                  </Paper>
+                </Grow>
+              )}
+            </Popper>
           </Stack>
         </Toolbar>
       </AppBar>

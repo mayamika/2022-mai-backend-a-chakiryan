@@ -11,6 +11,28 @@ import { gql, useQuery, useMutation } from '@apollo/client';
 
 import UserCard from '../components/UserCard';
 
+const FEED = gql`
+  query Feed($after: String) {
+    feed(first: 10, after: $after) {
+      totalCount
+      hasNextPage
+      scroll
+      posts {
+        id
+        from {
+          id
+          login
+          name
+          surname
+          relation
+        }
+        text
+        createdAt
+      }
+    }
+  }
+`;
+
 const FRIEND_REQUESTS = gql`
   query FriendRequests($cursor: Cursor) {
     friendRequests(first: 10, after: $cursor) {
@@ -69,6 +91,10 @@ function RequestButtons(props) {
       cache.evict({ id: normalizedId });
       cache.gc();
     },
+    refetchQueries: [
+      { query: FEED },
+      'Feed',
+    ],
   };
 
   const [accept] = useMutation(ACCEPT_FRIEND_REQUEST, { ...params });
