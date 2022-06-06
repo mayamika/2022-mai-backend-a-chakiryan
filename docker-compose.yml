@@ -11,6 +11,7 @@ services:
       POSTGRES_DB: mai_backend
   opensearch:
     image: docker.io/opensearchproject/opensearch:2.0.0
+    restart: always
     environment:
       - discovery.type=single-node
     ports:
@@ -18,6 +19,7 @@ services:
       - 9600:9600
   opensearch-dashboards:
     image: docker.io/opensearchproject/opensearch-dashboards:2.0.0
+    restart: always
     ports:
       - 5601:5601
     environment:
