@@ -87,19 +87,33 @@ import SearchUsers from './pages/SearchUsers';
 import FriendRequests from './pages/FriendRequests';
 
 function App() {
+  function MainBox({ children }) {
+    const location = useLocation();
+    let backgroundColor;
+    if (location.pathname != '/signin' && location.pathname != '/signup') {
+      backgroundColor = 'grey.200';
+    }
+
+    return (
+      <Box sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyConent: 'flex-end',
+        backgroundColor: backgroundColor,
+      }}>
+        {children}
+      </Box>
+    );
+  }
+
   return (
     <SessionProvider>
       <ApolloProvider>
         <Router>
           <LoginRedirect>
             <CssBaseline />
-            <Box sx={{
-              minHeight: '100vh',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyConent: 'flex-end',
-              backgroundColor: 'grey.200',
-            }}>
+            <MainBox>
               <Box sx={{ flexGrow: 1 }}>
                 <Menu />
                 <Routes>
@@ -116,7 +130,7 @@ function App() {
               <Box sx={{ mb: 1 }}>
                 <Copyright />
               </Box>
-            </Box>
+            </MainBox>
           </LoginRedirect>
         </Router>
       </ApolloProvider>

@@ -8,16 +8,21 @@ import {
   Paper,
   IconButton,
 } from '@mui/material';
-import { Send } from '@mui/icons-material';
+import { Send, Search } from '@mui/icons-material';
 
 import InfiniteScroll from 'react-infinite-scroller';
 import { gql, useQuery, useMutation } from '@apollo/client';
+import {
+  useSearchParams,
+  createSearchParams,
+  useNavigate,
+} from 'react-router-dom';
 
 import Post from '../components/Post';
 
 const FEED = gql`
-  query Feed($after: String) {
-    feed(first: 10, after: $after) {
+  query Feed($after: String, $search: String) {
+    feed(first: 10, after: $after, search: $search) {
       totalCount
       hasNextPage
       scroll
@@ -53,6 +58,57 @@ const PUBLISH_POST = gql`
     }
   }
 `;
+
+function PostSearch({ value }) {
+  const [text, setText] = React.useState(value);
+  const navigate = useNavigate();
+
+  const handleChange = (e) => {
+    setText(e.target.value);
+  };
+  const handleClick = (e) => {
+    e.preventDefault();
+    navigate({
+      pathname: '/feed',
+      search: `?${createSearchParams({ query: text })}`,
+    });
+  };
+
+  return (
+    <Paper>
+      <Grid
+        container
+        direction="row"
+        justifyContent="flex-start"
+        alignItems="flex-end"
+        spacing={2}
+      >
+        <Grid item flexGrow={1}>
+          <TextField
+            multiline
+            fullWidth
+            variant="standard"
+            placeholder='Search posts…'
+            value={text}
+            onChange={handleChange}
+            sx={{
+              m: 2,
+              backgroudColor: 'white.100',
+            }}
+            InputProps={{
+              disableUnderline: true,
+            }}
+          />
+        </Grid>
+        <Grid item>
+          <IconButton sx={{ m: 1 }} onClick={handleClick}>
+            <Search />
+          </IconButton>
+        </Grid>
+      </Grid>
+    </Paper>
+  );
+}
 
 function PostInput() {
   const [text, setText] = React.useState('');
@@ -116,7 +172,16 @@ function PostInput() {
 }
 
 function Feed() {
-  const { data, loading, error, fetchMore } = useQuery(FEED);
+  const [searchParams] = useSearchParams();
+  const search = searchParams.get('query');
+
+  console.log(search);
+  const { data, loading, error, fetchMore } = useQuery(FEED, {
+    variables: {
+      search: (search) ? search : null,
+    },
+    fetchPolicy: 'network-only',
+  });
 
   if (error) {
     console.log(error);
@@ -144,13 +209,14 @@ function Feed() {
           fetchMore({
             variables: {
               after: feed.scroll,
+              search: search,
             },
           });
         }}
         hasMore={feed.hasNextPage}
       >
         <Stack spacing={2}>
-          <PostInput />
+          {(search === null) ? <PostInput /> : <PostSearch value={search} />}
           {items}
         </Stack>
       </InfiniteScroll>

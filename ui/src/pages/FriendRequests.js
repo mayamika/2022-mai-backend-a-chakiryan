@@ -130,7 +130,9 @@ function RequestButtons(props) {
 }
 
 function FriendRequests() {
-  const { data, loading, error, fetchMore } = useQuery(FRIEND_REQUESTS);
+  const { data, loading, error, fetchMore } = useQuery(FRIEND_REQUESTS, {
+    fetchPolicy: 'network-only',
+  });
 
   if (error) {
     console.log(error);

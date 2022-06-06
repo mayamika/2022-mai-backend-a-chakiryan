@@ -30,9 +30,12 @@ function ApolloProvider({ children }) {
     typePolicies: {
       Query: {
         fields: {
-          users: relayStylePagination(),
+          users: relayStylePagination({
+            keyArgs: ['search', 'orderBy'],
+          }),
           friendRequests: relayStylePagination(),
           feed: {
+            keyArgs: ['search'],
             merge(existing, incoming, { readField }) {
               const posts = existing ? { ...existing.posts } : {};
               if (incoming.posts) {
@@ -63,7 +66,9 @@ function ApolloProvider({ children }) {
       },
       User: {
         fields: {
-          friends: relayStylePagination(),
+          friends: relayStylePagination({
+            keyArgs: ['orderBy'],
+          }),
         },
       },
     },

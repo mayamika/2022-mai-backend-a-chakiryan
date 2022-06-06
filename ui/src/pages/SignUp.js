@@ -32,6 +32,20 @@ function SignUp() {
   const [name, setName] = useState('');
   const [surname, setSurname] = useState('');
 
+  const loginRe = /^[a-zA-Z][a-zA-Z0-9]*$/;
+  const loginValid = loginRe.test(login);
+
+  const nameRe = /^[A-Z][a-z]*$/;
+  const nameValid = nameRe.test(name);
+  const surnameValid = nameRe.test(surname);
+
+  /* eslint-disable max-len */
+  const emailRe = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+  /* eslint-enable max-len */
+  const emailValid = emailRe.test(email);
+
+  const filled = nameValid && surnameValid && emailValid && password;
+
   const onChange = (setFn) => {
     return ((e) => {
       e.preventDefault();
@@ -97,6 +111,7 @@ function SignUp() {
                 label="First Name"
                 autoFocus
                 value={name}
+                error={!nameValid && name}
                 onChange={onChange(setName)}
               />
             </Grid>
@@ -109,6 +124,7 @@ function SignUp() {
                 name="lastName"
                 autoComplete="family-name"
                 value={surname}
+                error={!surnameValid && surname}
                 onChange={onChange(setSurname)}
               />
             </Grid>
@@ -121,6 +137,7 @@ function SignUp() {
                 name="username"
                 autoComplete="username"
                 value={login}
+                error={!loginValid && login}
                 onChange={onChange(setLogin)}
               />
             </Grid>
@@ -133,6 +150,7 @@ function SignUp() {
                 name="email"
                 autoComplete="email"
                 value={email}
+                error={!emailValid && email}
                 onChange={onChange(setEmail)}
               />
             </Grid>
@@ -153,6 +171,7 @@ function SignUp() {
           <Button
             type="submit"
             fullWidth
+            disabled={!filled}
             variant="contained"
             sx={{ mt: 3, mb: 2 }}
           >

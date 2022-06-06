@@ -23,11 +23,16 @@ type Controller struct {
 }
 
 func NewController(
+	ctx context.Context,
 	client *opensearch.Client,
-) *Controller {
-	return &Controller{
+) (*Controller, error) {
+	c := &Controller{
 		client: client,
 	}
+	if err := c.createIndex(ctx); err != nil {
+		return nil, err
+	}
+	return c, nil
 }
 
 func (c *Controller) Feed(

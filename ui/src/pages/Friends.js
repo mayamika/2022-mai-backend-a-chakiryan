@@ -34,7 +34,9 @@ const FRIENDS = gql`
 `;
 
 function Friends() {
-  const { data, loading, error, fetchMore } = useQuery(FRIENDS);
+  const { data, loading, error, fetchMore } = useQuery(FRIENDS, {
+    fetchPolicy: 'network-only',
+  });
 
   if (error) {
     console.log(error);
