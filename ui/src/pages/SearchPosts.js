@@ -15,50 +15,47 @@ import {
 import InfiniteScroll from 'react-infinite-scroller';
 import { gql, useQuery } from '@apollo/client';
 
-import FriendButton from '../components/FriendButton';
-import UserCard from '../components/UserCard';
+import Post from '../components/Post';
 import SearchBar from '../components/SearchBar';
 
-const USERS = gql`
-  query Users($cursor: Cursor, $search: String) {
-    users(first: 10, after: $cursor, search: $search) {
-      edges {
-        node {
+const POSTS = gql`
+  query Feed($after: String, $search: String) {
+    feed(first: 10, after: $after, search: $search) {
+      totalCount
+      hasNextPage
+      scroll
+      posts {
+        id
+        from {
           id
           login
           name
           surname
           relation
         }
-        cursor
-      }
-      pageInfo {
-        hasNextPage
-        endCursor
+        text
+        createdAt
       }
     }
   }
 `;
 
-function Users({ query }) {
-  const { data, fetchMore } = useQuery(USERS, {
+function Posts({ query }) {
+  const { data, fetchMore } = useQuery(POSTS, {
     variables: {
       search: (query) ? query : null,
     },
   });
-
   if (!data) {
     return null;
   }
 
-  const nodes = data.users.edges.map((edge) => edge.node);
-  const pageInfo = data.users.pageInfo;
+  const feed = data.feed;
+  const posts = feed.posts;
 
-  const items = nodes.map((n) => {
+  const items = posts.map((post) => {
     return (
-      <UserCard key={n.id} user={n}>
-        <FriendButton user={n} />
-      </UserCard>
+      <Post key={post.id} {...post} />
     );
   });
 
@@ -68,28 +65,27 @@ function Users({ query }) {
       loadMore={() => {
         fetchMore({
           variables: {
-            cursor: pageInfo.endCursor,
+            after: feed.scroll,
           },
         });
       }}
-      hasMore={pageInfo.hasNextPage}
-      loader={<div className="loader" key={0}>Loading ...</div>}
+      hasMore={feed.hasNextPage}
     >
       <Stack spacing={2}>
         {items}
-      </Stack>
+      </ Stack >
     </InfiniteScroll>
   );
 }
 
-function SearchUsers() {
+function SearchPosts() {
   const [searchParams] = useSearchParams();
   const query = searchParams.get('query');
 
   const navigate = useNavigate();
   const onSubmit = (val) => {
     const loc = {
-      pathname: '/search/users',
+      pathname: '/search/posts',
       search: `?${createSearchParams({ query: val })}`,
     };
     navigate(loc);
@@ -103,10 +99,10 @@ function SearchUsers() {
         >
           <SearchBar value={query} onSubmit={onSubmit} />
         </Paper>
-        <Users query={query} />
+        <Posts query={query} />
       </Stack>
-    </Container>
+    </Container >
   );
 }
 
-export default SearchUsers;
+export default SearchPosts;

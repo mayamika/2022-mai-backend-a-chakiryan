@@ -93,7 +93,6 @@ function RequestButtons(props) {
     },
     refetchQueries: [
       { query: FEED },
-      'Feed',
     ],
   };
 
@@ -142,9 +141,9 @@ function FriendRequests() {
   const nodes = data.friendRequests.edges.map((edge) => edge.node);
   const pageInfo = data.friendRequests.pageInfo;
 
-  const items = nodes.map((n, id) => {
+  const items = nodes.map((n) => {
     return (
-      <UserCard key={id + 1} user={n.from}>
+      <UserCard key={n.id} user={n.from}>
         <RequestButtons friendRequest={n} />
       </UserCard>
     );
@@ -152,7 +151,7 @@ function FriendRequests() {
   console.log(pageInfo.hasNextPage);
 
   return (
-    <Container maxWidth='md' sx={{ mt: 5 }}>
+    <Container maxWidth='sm' sx={{ mt: 5 }}>
       <InfiniteScroll
         pageStart={0}
         loadMore={() => {

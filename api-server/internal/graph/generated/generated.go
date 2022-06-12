@@ -752,7 +752,7 @@ extend type Query {
   nodes(ids: [ID!]!): [Node]!
 }
 `, BuiltIn: false},
-	{Name: "schema/scalaar.graphqls", Input: `scalar Time
+	{Name: "schema/scalar.graphqls", Input: `scalar Time
 `, BuiltIn: false},
 	{Name: "schema/user.graphqls", Input: `type User implements Node {
   id: ID!

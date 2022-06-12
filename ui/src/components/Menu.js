@@ -49,7 +49,7 @@ const ME = gql`
 function Menu() {
   const location = useLocation();
   if (location.pathname == '/signin' || location.pathname == '/signup') {
-    return <div />;
+    return null;
   }
 
   const { data, error } = useQuery(ME);
@@ -63,12 +63,13 @@ function Menu() {
   const [, setSession] = React.useContext(SessionContext);
   const navigate = useNavigate();
 
-  const searchUsers = (query) => {
+  const onSearch = (query, setQuery) => {
     const loc = {
       pathname: '/search',
       search: `?${createSearchParams({ query: query })}`,
     };
     navigate(loc);
+    setQuery('');
   };
 
   const [open, setOpen] = React.useState(false);
@@ -100,10 +101,11 @@ function Menu() {
           <Typography variant="h6" component="p">
             Sample Name
           </Typography>
-          <SearchBar
-            placeholder='Search users…'
-            onSubmit={searchUsers}
-          />
+          <Box sx={{ ml: 3 }}>
+            <SearchBar
+              onSubmit={onSearch}
+            />
+          </Box>
           <Stack
             direction="row"
             alignItems="center"
@@ -165,6 +167,7 @@ function Menu() {
               }
               sx={{
                 textTransform: 'none',
+                py: 0,
               }}
             >
               <Typography

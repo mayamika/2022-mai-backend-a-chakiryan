@@ -30,9 +30,7 @@ function ApolloProvider({ children }) {
     typePolicies: {
       Query: {
         fields: {
-          users: relayStylePagination({
-            keyArgs: ['search', 'orderBy'],
-          }),
+          users: relayStylePagination(['search', 'orderBy']),
           friendRequests: relayStylePagination(),
           feed: {
             keyArgs: ['search'],
@@ -66,9 +64,7 @@ function ApolloProvider({ children }) {
       },
       User: {
         fields: {
-          friends: relayStylePagination({
-            keyArgs: ['orderBy'],
-          }),
+          friends: relayStylePagination(['orderBy']),
         },
       },
     },
