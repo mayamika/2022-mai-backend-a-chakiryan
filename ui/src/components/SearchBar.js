@@ -2,7 +2,6 @@ import React from 'react';
 import { styled, alpha } from '@mui/material/styles';
 import { Box, InputBase } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
-import { useLocation } from 'react-router-dom';
 
 const Search = styled('div')(({ theme }) => ({
   'position': 'relative',
@@ -15,7 +14,6 @@ const Search = styled('div')(({ theme }) => ({
   'marginLeft': 0,
   'width': '100%',
   [theme.breakpoints.up('sm')]: {
-    marginLeft: theme.spacing(3),
     width: 'auto',
   },
 }));
@@ -37,27 +35,19 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
     // vertical padding + font size from searchIcon
     paddingLeft: `calc(1em + ${theme.spacing(4)})`,
     transition: theme.transitions.create('width'),
-    width: '100%',
-    [theme.breakpoints.up('md')]: {
-      width: '20ch',
-    },
   },
 }));
 
-function SearchBar(props) {
-  const { placeholder, onSubmit } = props;
+function SearchBar({ placeholder, onSubmit, value }) {
+  const [query, setQuery] = React.useState(value);
 
-  const [query, setQuery] = React.useState('');
-  const location = useLocation();
   React.useEffect(() => {
-    if (location.pathname != '/search') {
-      setQuery('');
-    }
-  }, [location]);
+    setQuery(value);
+  }, [value]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (onSubmit) onSubmit(query);
+    if (onSubmit) onSubmit(query, setQuery);
   };
 
   return (
@@ -67,6 +57,7 @@ function SearchBar(props) {
           <SearchIcon />
         </SearchIconWrapper>
         <StyledInputBase
+          fullWidth
           placeholder={placeholder}
           inputProps={{ 'aria-label': 'search' }}
           value={query}
@@ -86,6 +77,7 @@ function SearchBar(props) {
 
 SearchBar.defaultProps = {
   placeholder: 'Search…',
+  value: '',
 };
 
 export default SearchBar;

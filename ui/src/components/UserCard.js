@@ -14,25 +14,27 @@ function UserCard(props) {
   const { login, name, surname } = user;
 
   return (
-    <Card>
-      <CardContent>
+    <Card >
+      <CardContent sx={{
+        'p': 2,
+        '&:last-child': {
+          paddingBottom: 2,
+        },
+      }}>
         <Grid
           container
           direction="row"
           justifyContent="flex-start"
           alignItems="center"
-          spacing={2}
         >
-          <Grid item>
-            <UserAvatar user={user} size={10} sx={{ m: 1 }} />
+          <Grid item >
+            <UserAvatar user={user} size={8} />
           </Grid>
-          <Grid item>
-            <Typography variant="h5" component="div">
+          <Grid item ml={2}>
+            <Typography variant="body1" component="div">
               {name} {surname}
             </Typography>
-          </Grid>
-          <Grid item flexGrow={1}>
-            <Typography variant="h5" component="div" color="text.secondary">
+            <Typography variant="body1" component="div" color="text.secondary">
               @{login}
             </Typography>
           </Grid>
@@ -41,7 +43,7 @@ function UserCard(props) {
           </Grid>
         </Grid>
       </CardContent>
-    </Card>
+    </Card >
   );
 }
 

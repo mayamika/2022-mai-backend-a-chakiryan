@@ -46,16 +46,16 @@ function Friends() {
   const nodes = data.me.friends.edges.map((edge) => edge.node);
   const pageInfo = data.me.friends.pageInfo;
 
-  const items = nodes.map((n, id) => {
+  const items = nodes.map((n) => {
     return (
-      <UserCard key={id + 1} user={n} />
+      <UserCard key={n.id} user={n} />
     );
   });
   console.log(pageInfo.hasNextPage);
 
 
   return (
-    <Container maxWidth='md' sx={{ mt: 5 }}>
+    <Container maxWidth='sm' sx={{ mt: 5 }}>
       <InfiniteScroll
         pageStart={0}
         loadMore={() => {

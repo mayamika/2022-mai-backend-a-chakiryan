@@ -83,7 +83,9 @@ import SignIn from './pages/SignIn';
 import Feed from './pages/Feed';
 import User from './pages/User';
 import Friends from './pages/Friends';
+import Search from './pages/Search';
 import SearchUsers from './pages/SearchUsers';
+import SearchPosts from './pages/SearchPosts';
 import FriendRequests from './pages/FriendRequests';
 
 function App() {
@@ -123,8 +125,10 @@ function App() {
                   <Route path="/feed" element={<Feed />} />
                   <Route path="/u/:login" element={<User />} />
                   <Route path="/friends" element={<Friends />} />
-                  <Route path="/search" element={<SearchUsers />} />
                   <Route path="/friend-requests" element={<FriendRequests />} />
+                  <Route path="/search" element={<Search />} />
+                  <Route path="/search/users" element={<SearchUsers />} />
+                  <Route path="/search/posts" element={<SearchPosts />} />
                 </Routes>
               </Box>
               <Box sx={{ mb: 1 }}>

@@ -28,7 +28,7 @@ function Post(props) {
         subheader={humanizeDate(createdAt)}
       />
       <CardContent>
-        <Typography variant="body2" component="div" color="text.primary">
+        <Typography variant="body1" component="div" color="text.primary">
           {text}
         </Typography>
       </CardContent >

@@ -32,7 +32,10 @@ function AddButton(props) {
   };
 
   return (
-    <Button variant="outlined" disabled={disabled} onClick={onClick} >
+    <Button size='small' variant="outlined"
+      disabled={disabled}
+      onClick={onClick}
+    >
       {text}
     </Button>
   );
@@ -41,7 +44,7 @@ function AddButton(props) {
 function DeleteButton(props) {
   // TODO: Add gql query && implement.
   return (
-    <Button variant="outlined">
+    <Button size='small' variant="outlined">
       Delete friend
     </Button>
   );
@@ -49,7 +52,7 @@ function DeleteButton(props) {
 
 function SentButton(props) {
   return (
-    <Button variant="outlined" disabled>
+    <Button size='small' variant="outlined" disabled>
       {'Request sent'}
     </Button>
   );
@@ -57,7 +60,7 @@ function SentButton(props) {
 
 function YouButton(props) {
   return (
-    <Button variant="outlined" disabled>
+    <Button size='small' variant="outlined" disabled>
       {'It\'s you'}
     </Button>
   );
