@@ -3,7 +3,8 @@ package feed
 import "time"
 
 type PostInput struct {
-	Text string
+	Text   string
+	Images []string
 }
 
 type Post struct {
@@ -11,6 +12,7 @@ type Post struct {
 	From      int
 	Text      string
 	CreatedAt time.Time
+	Images    []string
 }
 
 type FeedPayload struct {

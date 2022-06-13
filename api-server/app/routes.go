@@ -23,6 +23,7 @@ func (a *App) routes() chi.Router {
 		a.authController,
 		a.friendController,
 		a.feedController,
+		a.imageStorage,
 	)
 	query := handler.NewDefaultServer(gqlgenerated.NewExecutableSchema(
 		gqlgenerated.Config{

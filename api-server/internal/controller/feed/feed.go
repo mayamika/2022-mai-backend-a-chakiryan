@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/opensearch-project/opensearch-go"
@@ -58,7 +59,6 @@ func (c *Controller) Feed(
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		fmt.Println(res.String())
 		return nil, errors.New("search request failed")
 	}
 
@@ -88,6 +88,7 @@ func (c *Controller) Feed(
 			From:      h.Source.From,
 			Text:      h.Source.Text,
 			CreatedAt: h.Source.CreatedAt,
+			Images:    h.Source.Images,
 		})
 	}
 	if len(b.Hits.Hits) > 0 {
@@ -107,10 +108,12 @@ func (c *Controller) PublishPost(
 		return nil, auth.ErrNotAuthenticated
 	}
 
+	text := strings.TrimSpace(input.Text)
 	p := post{
 		From:      t.UserID,
-		Text:      input.Text,
+		Text:      text,
 		CreatedAt: time.Now(),
+		Images:    input.Images,
 	}
 
 	var reqBody bytes.Buffer
@@ -146,6 +149,7 @@ func (c *Controller) PublishPost(
 		From:      p.From,
 		Text:      p.Text,
 		CreatedAt: p.CreatedAt,
+		Images:    p.Images,
 	}, nil
 }
 

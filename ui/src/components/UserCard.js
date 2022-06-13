@@ -30,7 +30,7 @@ function UserCard(props) {
           <Grid item >
             <UserAvatar user={user} size={8} />
           </Grid>
-          <Grid item ml={2}>
+          <Grid item ml={2} flexGrow={1}>
             <Typography variant="body1" component="div">
               {name} {surname}
             </Typography>

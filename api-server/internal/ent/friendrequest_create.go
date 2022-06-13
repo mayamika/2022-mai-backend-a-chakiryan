@@ -81,15 +81,9 @@ func (frc *FriendRequestCreate) Save(ctx context.Context) (*FriendRequest, error
 			}
 			mut = frc.hooks[i](mut)
 		}
-		v, err := mut.Mutate(ctx, frc.mutation)
-		if err != nil {
+		if _, err := mut.Mutate(ctx, frc.mutation); err != nil {
 			return nil, err
 		}
-		nv, ok := v.(*FriendRequest)
-		if !ok {
-			return nil, fmt.Errorf("unexpected node type %T returned from FriendRequestMutation", v)
-		}
-		node = nv
 	}
 	return node, err
 }

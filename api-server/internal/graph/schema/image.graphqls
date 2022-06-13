@@ -1,0 +1,7 @@
+type Image {
+  name: String!
+}
+
+extend type Mutation {
+  uploadImage(file: Upload!): Image!
+}

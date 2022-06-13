@@ -8,6 +8,10 @@ import (
 	"strconv"
 )
 
+type Image struct {
+	Name string `json:"name"`
+}
+
 type UserRelation string
 
 const (

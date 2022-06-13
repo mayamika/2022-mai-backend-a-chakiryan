@@ -322,15 +322,9 @@ func (fruo *FriendRequestUpdateOne) Save(ctx context.Context) (*FriendRequest, e
 			}
 			mut = fruo.hooks[i](mut)
 		}
-		v, err := mut.Mutate(ctx, fruo.mutation)
-		if err != nil {
+		if _, err := mut.Mutate(ctx, fruo.mutation); err != nil {
 			return nil, err
 		}
-		nv, ok := v.(*FriendRequest)
-		if !ok {
-			return nil, fmt.Errorf("unexpected node type %T returned from FriendRequestMutation", v)
-		}
-		node = nv
 	}
 	return node, err
 }

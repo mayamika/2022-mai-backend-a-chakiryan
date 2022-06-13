@@ -24,6 +24,7 @@ func (r *queryResolver) Users(ctx context.Context, after *ent.Cursor, first *int
 				user.Or(
 					user.NameContainsFold(s),
 					user.SurnameContainsFold(s),
+					user.LoginContainsFold(s),
 				),
 			))
 		}

@@ -54,6 +54,7 @@ const POSTS = gql`
         }
         text
         createdAt
+        images
       }
     }
   }
