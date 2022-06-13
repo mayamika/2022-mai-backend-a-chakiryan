@@ -28,6 +28,7 @@ const FEED = gql`
         }
         text
         createdAt
+        images
       }
     }
   }

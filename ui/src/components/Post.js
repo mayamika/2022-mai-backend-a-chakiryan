@@ -4,10 +4,13 @@ import {
   Card,
   CardContent,
   CardHeader,
+  CardMedia,
   Typography,
 } from '@mui/material';
+import { useTheme } from '@mui/system';
 
 import UserAvatar from './UserAvatar';
+import Gallery from 'react-grid-gallery';
 
 function humanizeDate(rawDate) {
   const options = { year: 'numeric', month: 'long', day: 'numeric' };
@@ -15,11 +18,24 @@ function humanizeDate(rawDate) {
 }
 
 function Post(props) {
-  const { from, text, createdAt } = props;
+  const { from, text, createdAt, images } = props;
   const { login, name, surname } = from;
 
+  const theme = useTheme();
+
+  const galleryImages = images.map((src) => {
+    const url = 'https://mai-post-images.storage.yandexcloud.net/' + src;
+    const image = {
+      src: url,
+      thumbnail: url,
+      // thumbnailWidth: 320,
+      // thumbnailHeight: 174,
+    };
+    return image;
+  });
+
   return (
-    <Card>
+    <Card sx={{ display: 'flex', flexDirection: 'column' }}>
       <CardHeader
         avatar={
           <UserAvatar user={from} />
@@ -27,11 +43,23 @@ function Post(props) {
         title={`${name} ${surname} @${login}`}
         subheader={humanizeDate(createdAt)}
       />
-      <CardContent>
-        <Typography variant="body1" component="div" color="text.primary">
-          {text}
-        </Typography>
-      </CardContent >
+      {text &&
+        <CardContent>
+          <Typography variant="body1" component="div" color="text.primary">
+            {text}
+          </Typography>
+        </CardContent>
+      }
+      {galleryImages.length > 0 &&
+        <CardMedia sx={{ m: 1, mt: -1 }}>
+          <Gallery
+            images={galleryImages}
+            enableImageSelection={false}
+            backdropClosesModal={true}
+            margin={theme.spacing(1)}
+          />
+        </CardMedia>
+      }
     </Card >
   );
 }

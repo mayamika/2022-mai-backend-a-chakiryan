@@ -4,15 +4,15 @@ import {
   ApolloClient,
   InMemoryCache,
   ApolloProvider as Provider,
-  createHttpLink,
 } from '@apollo/client';
 
+import { createUploadLink } from 'apollo-upload-client';
 import { relayStylePagination } from '@apollo/client/utilities';
 import { setContext } from '@apollo/client/link/context';
 import { SessionContext } from './session';
 
 function ApolloProvider({ children }) {
-  const httpLink = createHttpLink({
+  const httpLink = createUploadLink({
     uri: '/query',
   });
 

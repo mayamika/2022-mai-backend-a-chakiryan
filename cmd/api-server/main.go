@@ -19,7 +19,7 @@ func main() {
 
 	logger := newLogger()
 
-	startCtx, cancelStart := context.WithCancel(context.Background())
+	startCtx, cancelStart := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancelStart()
 
 	a, err := app.New(startCtx, config, logger)

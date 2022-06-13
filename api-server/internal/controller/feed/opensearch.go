@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/opensearch-project/opensearch-go/opensearchapi"
 )
 
@@ -17,6 +18,7 @@ type post struct {
 	From      int       `json:"from"`
 	Text      string    `json:"text"`
 	CreatedAt time.Time `json:"created_at"`
+	Images    []string  `json:"images"`
 }
 
 func (c *Controller) createIndex(ctx context.Context) error {
@@ -24,6 +26,7 @@ func (c *Controller) createIndex(ctx context.Context) error {
 		From:      0,
 		Text:      "Text",
 		CreatedAt: time.Now(),
+		Images:    []string{uuid.NewString(), uuid.NewString()},
 	})
 
 	createRequest := opensearchapi.IndexRequest{

@@ -6,6 +6,7 @@ import (
 	"github.com/mayamika/2022-mai-backend-a-chakiryan/api-server/internal/ent"
 	"github.com/mayamika/2022-mai-backend-a-chakiryan/api-server/internal/model/auth"
 	"github.com/mayamika/2022-mai-backend-a-chakiryan/api-server/internal/model/feed"
+	"github.com/mayamika/2022-mai-backend-a-chakiryan/api-server/internal/model/upload"
 )
 
 type FriendController interface {
@@ -31,20 +32,27 @@ type FeedController interface {
 	PublishPost(ctx context.Context, input feed.PostInput) (*feed.Post, error)
 }
 
+type ImageStorage interface {
+	AddImage(ctx context.Context, u upload.Upload) (string, error)
+}
+
 type Resolver struct {
 	authController   AuthController
 	friendController FriendController
 	feedController   FeedController
+	imageStorage     ImageStorage
 }
 
 func New(
 	authController AuthController,
 	friendController FriendController,
 	feedController FeedController,
+	imageStorage ImageStorage,
 ) *Resolver {
 	return &Resolver{
 		authController:   authController,
 		friendController: friendController,
 		feedController:   feedController,
+		imageStorage:     imageStorage,
 	}
 }

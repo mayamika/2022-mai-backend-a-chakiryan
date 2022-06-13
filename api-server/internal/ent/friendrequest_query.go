@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 
@@ -25,11 +26,9 @@ type FriendRequestQuery struct {
 	fields     []string
 	predicates []predicate.FriendRequest
 	// eager-loading edges.
-	withFrom  *UserQuery
-	withTo    *UserQuery
-	withFKs   bool
-	modifiers []func(*sql.Selector)
-	loadTotal []func(context.Context, []*FriendRequest) error
+	withFrom *UserQuery
+	withTo   *UserQuery
+	withFKs  bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -325,27 +324,22 @@ func (frq *FriendRequestQuery) WithTo(opts ...func(*UserQuery)) *FriendRequestQu
 // GroupBy is used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
 func (frq *FriendRequestQuery) GroupBy(field string, fields ...string) *FriendRequestGroupBy {
-	grbuild := &FriendRequestGroupBy{config: frq.config}
-	grbuild.fields = append([]string{field}, fields...)
-	grbuild.path = func(ctx context.Context) (prev *sql.Selector, err error) {
+	group := &FriendRequestGroupBy{config: frq.config}
+	group.fields = append([]string{field}, fields...)
+	group.path = func(ctx context.Context) (prev *sql.Selector, err error) {
 		if err := frq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
 		return frq.sqlQuery(ctx), nil
 	}
-	grbuild.label = friendrequest.Label
-	grbuild.flds, grbuild.scan = &grbuild.fields, grbuild.Scan
-	return grbuild
+	return group
 }
 
 // Select allows the selection one or more fields/columns for the given query,
 // instead of selecting all fields in the entity.
 func (frq *FriendRequestQuery) Select(fields ...string) *FriendRequestSelect {
 	frq.fields = append(frq.fields, fields...)
-	selbuild := &FriendRequestSelect{FriendRequestQuery: frq}
-	selbuild.label = friendrequest.Label
-	selbuild.flds, selbuild.scan = &frq.fields, selbuild.Scan
-	return selbuild
+	return &FriendRequestSelect{FriendRequestQuery: frq}
 }
 
 func (frq *FriendRequestQuery) prepareQuery(ctx context.Context) error {
@@ -364,7 +358,7 @@ func (frq *FriendRequestQuery) prepareQuery(ctx context.Context) error {
 	return nil
 }
 
-func (frq *FriendRequestQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*FriendRequest, error) {
+func (frq *FriendRequestQuery) sqlAll(ctx context.Context) ([]*FriendRequest, error) {
 	var (
 		nodes       = []*FriendRequest{}
 		withFKs     = frq.withFKs
@@ -381,19 +375,17 @@ func (frq *FriendRequestQuery) sqlAll(ctx context.Context, hooks ...queryHook) (
 		_spec.Node.Columns = append(_spec.Node.Columns, friendrequest.ForeignKeys...)
 	}
 	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
-		return (*FriendRequest).scanValues(nil, columns)
-	}
-	_spec.Assign = func(columns []string, values []interface{}) error {
 		node := &FriendRequest{config: frq.config}
 		nodes = append(nodes, node)
+		return node.scanValues(columns)
+	}
+	_spec.Assign = func(columns []string, values []interface{}) error {
+		if len(nodes) == 0 {
+			return fmt.Errorf("ent: Assign called without calling ScanValues")
+		}
+		node := nodes[len(nodes)-1]
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
-	}
-	if len(frq.modifiers) > 0 {
-		_spec.Modifiers = frq.modifiers
-	}
-	for i := range hooks {
-		hooks[i](ctx, _spec)
 	}
 	if err := sqlgraph.QueryNodes(ctx, frq.driver, _spec); err != nil {
 		return nil, err
@@ -460,19 +452,11 @@ func (frq *FriendRequestQuery) sqlAll(ctx context.Context, hooks ...queryHook) (
 		}
 	}
 
-	for i := range frq.loadTotal {
-		if err := frq.loadTotal[i](ctx, nodes); err != nil {
-			return nil, err
-		}
-	}
 	return nodes, nil
 }
 
 func (frq *FriendRequestQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := frq.querySpec()
-	if len(frq.modifiers) > 0 {
-		_spec.Modifiers = frq.modifiers
-	}
 	_spec.Node.Columns = frq.fields
 	if len(frq.fields) > 0 {
 		_spec.Unique = frq.unique != nil && *frq.unique
@@ -571,7 +555,6 @@ func (frq *FriendRequestQuery) sqlQuery(ctx context.Context) *sql.Selector {
 // FriendRequestGroupBy is the group-by builder for FriendRequest entities.
 type FriendRequestGroupBy struct {
 	config
-	selector
 	fields []string
 	fns    []AggregateFunc
 	// intermediate query (i.e. traversal path).
@@ -593,6 +576,209 @@ func (frgb *FriendRequestGroupBy) Scan(ctx context.Context, v interface{}) error
 	}
 	frgb.sql = query
 	return frgb.sqlScan(ctx, v)
+}
+
+// ScanX is like Scan, but panics if an error occurs.
+func (frgb *FriendRequestGroupBy) ScanX(ctx context.Context, v interface{}) {
+	if err := frgb.Scan(ctx, v); err != nil {
+		panic(err)
+	}
+}
+
+// Strings returns list of strings from group-by.
+// It is only allowed when executing a group-by query with one field.
+func (frgb *FriendRequestGroupBy) Strings(ctx context.Context) ([]string, error) {
+	if len(frgb.fields) > 1 {
+		return nil, errors.New("ent: FriendRequestGroupBy.Strings is not achievable when grouping more than 1 field")
+	}
+	var v []string
+	if err := frgb.Scan(ctx, &v); err != nil {
+		return nil, err
+	}
+	return v, nil
+}
+
+// StringsX is like Strings, but panics if an error occurs.
+func (frgb *FriendRequestGroupBy) StringsX(ctx context.Context) []string {
+	v, err := frgb.Strings(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
+// String returns a single string from a group-by query.
+// It is only allowed when executing a group-by query with one field.
+func (frgb *FriendRequestGroupBy) String(ctx context.Context) (_ string, err error) {
+	var v []string
+	if v, err = frgb.Strings(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{friendrequest.Label}
+	default:
+		err = fmt.Errorf("ent: FriendRequestGroupBy.Strings returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// StringX is like String, but panics if an error occurs.
+func (frgb *FriendRequestGroupBy) StringX(ctx context.Context) string {
+	v, err := frgb.String(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
+// Ints returns list of ints from group-by.
+// It is only allowed when executing a group-by query with one field.
+func (frgb *FriendRequestGroupBy) Ints(ctx context.Context) ([]int, error) {
+	if len(frgb.fields) > 1 {
+		return nil, errors.New("ent: FriendRequestGroupBy.Ints is not achievable when grouping more than 1 field")
+	}
+	var v []int
+	if err := frgb.Scan(ctx, &v); err != nil {
+		return nil, err
+	}
+	return v, nil
+}
+
+// IntsX is like Ints, but panics if an error occurs.
+func (frgb *FriendRequestGroupBy) IntsX(ctx context.Context) []int {
+	v, err := frgb.Ints(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
+// Int returns a single int from a group-by query.
+// It is only allowed when executing a group-by query with one field.
+func (frgb *FriendRequestGroupBy) Int(ctx context.Context) (_ int, err error) {
+	var v []int
+	if v, err = frgb.Ints(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{friendrequest.Label}
+	default:
+		err = fmt.Errorf("ent: FriendRequestGroupBy.Ints returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// IntX is like Int, but panics if an error occurs.
+func (frgb *FriendRequestGroupBy) IntX(ctx context.Context) int {
+	v, err := frgb.Int(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
+// Float64s returns list of float64s from group-by.
+// It is only allowed when executing a group-by query with one field.
+func (frgb *FriendRequestGroupBy) Float64s(ctx context.Context) ([]float64, error) {
+	if len(frgb.fields) > 1 {
+		return nil, errors.New("ent: FriendRequestGroupBy.Float64s is not achievable when grouping more than 1 field")
+	}
+	var v []float64
+	if err := frgb.Scan(ctx, &v); err != nil {
+		return nil, err
+	}
+	return v, nil
+}
+
+// Float64sX is like Float64s, but panics if an error occurs.
+func (frgb *FriendRequestGroupBy) Float64sX(ctx context.Context) []float64 {
+	v, err := frgb.Float64s(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
+// Float64 returns a single float64 from a group-by query.
+// It is only allowed when executing a group-by query with one field.
+func (frgb *FriendRequestGroupBy) Float64(ctx context.Context) (_ float64, err error) {
+	var v []float64
+	if v, err = frgb.Float64s(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{friendrequest.Label}
+	default:
+		err = fmt.Errorf("ent: FriendRequestGroupBy.Float64s returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// Float64X is like Float64, but panics if an error occurs.
+func (frgb *FriendRequestGroupBy) Float64X(ctx context.Context) float64 {
+	v, err := frgb.Float64(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
+// Bools returns list of bools from group-by.
+// It is only allowed when executing a group-by query with one field.
+func (frgb *FriendRequestGroupBy) Bools(ctx context.Context) ([]bool, error) {
+	if len(frgb.fields) > 1 {
+		return nil, errors.New("ent: FriendRequestGroupBy.Bools is not achievable when grouping more than 1 field")
+	}
+	var v []bool
+	if err := frgb.Scan(ctx, &v); err != nil {
+		return nil, err
+	}
+	return v, nil
+}
+
+// BoolsX is like Bools, but panics if an error occurs.
+func (frgb *FriendRequestGroupBy) BoolsX(ctx context.Context) []bool {
+	v, err := frgb.Bools(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
+// Bool returns a single bool from a group-by query.
+// It is only allowed when executing a group-by query with one field.
+func (frgb *FriendRequestGroupBy) Bool(ctx context.Context) (_ bool, err error) {
+	var v []bool
+	if v, err = frgb.Bools(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{friendrequest.Label}
+	default:
+		err = fmt.Errorf("ent: FriendRequestGroupBy.Bools returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// BoolX is like Bool, but panics if an error occurs.
+func (frgb *FriendRequestGroupBy) BoolX(ctx context.Context) bool {
+	v, err := frgb.Bool(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
 }
 
 func (frgb *FriendRequestGroupBy) sqlScan(ctx context.Context, v interface{}) error {
@@ -636,7 +822,6 @@ func (frgb *FriendRequestGroupBy) sqlQuery() *sql.Selector {
 // FriendRequestSelect is the builder for selecting fields of FriendRequest entities.
 type FriendRequestSelect struct {
 	*FriendRequestQuery
-	selector
 	// intermediate query (i.e. traversal path).
 	sql *sql.Selector
 }
@@ -648,6 +833,201 @@ func (frs *FriendRequestSelect) Scan(ctx context.Context, v interface{}) error {
 	}
 	frs.sql = frs.FriendRequestQuery.sqlQuery(ctx)
 	return frs.sqlScan(ctx, v)
+}
+
+// ScanX is like Scan, but panics if an error occurs.
+func (frs *FriendRequestSelect) ScanX(ctx context.Context, v interface{}) {
+	if err := frs.Scan(ctx, v); err != nil {
+		panic(err)
+	}
+}
+
+// Strings returns list of strings from a selector. It is only allowed when selecting one field.
+func (frs *FriendRequestSelect) Strings(ctx context.Context) ([]string, error) {
+	if len(frs.fields) > 1 {
+		return nil, errors.New("ent: FriendRequestSelect.Strings is not achievable when selecting more than 1 field")
+	}
+	var v []string
+	if err := frs.Scan(ctx, &v); err != nil {
+		return nil, err
+	}
+	return v, nil
+}
+
+// StringsX is like Strings, but panics if an error occurs.
+func (frs *FriendRequestSelect) StringsX(ctx context.Context) []string {
+	v, err := frs.Strings(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
+// String returns a single string from a selector. It is only allowed when selecting one field.
+func (frs *FriendRequestSelect) String(ctx context.Context) (_ string, err error) {
+	var v []string
+	if v, err = frs.Strings(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{friendrequest.Label}
+	default:
+		err = fmt.Errorf("ent: FriendRequestSelect.Strings returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// StringX is like String, but panics if an error occurs.
+func (frs *FriendRequestSelect) StringX(ctx context.Context) string {
+	v, err := frs.String(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
+// Ints returns list of ints from a selector. It is only allowed when selecting one field.
+func (frs *FriendRequestSelect) Ints(ctx context.Context) ([]int, error) {
+	if len(frs.fields) > 1 {
+		return nil, errors.New("ent: FriendRequestSelect.Ints is not achievable when selecting more than 1 field")
+	}
+	var v []int
+	if err := frs.Scan(ctx, &v); err != nil {
+		return nil, err
+	}
+	return v, nil
+}
+
+// IntsX is like Ints, but panics if an error occurs.
+func (frs *FriendRequestSelect) IntsX(ctx context.Context) []int {
+	v, err := frs.Ints(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
+// Int returns a single int from a selector. It is only allowed when selecting one field.
+func (frs *FriendRequestSelect) Int(ctx context.Context) (_ int, err error) {
+	var v []int
+	if v, err = frs.Ints(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{friendrequest.Label}
+	default:
+		err = fmt.Errorf("ent: FriendRequestSelect.Ints returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// IntX is like Int, but panics if an error occurs.
+func (frs *FriendRequestSelect) IntX(ctx context.Context) int {
+	v, err := frs.Int(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
+// Float64s returns list of float64s from a selector. It is only allowed when selecting one field.
+func (frs *FriendRequestSelect) Float64s(ctx context.Context) ([]float64, error) {
+	if len(frs.fields) > 1 {
+		return nil, errors.New("ent: FriendRequestSelect.Float64s is not achievable when selecting more than 1 field")
+	}
+	var v []float64
+	if err := frs.Scan(ctx, &v); err != nil {
+		return nil, err
+	}
+	return v, nil
+}
+
+// Float64sX is like Float64s, but panics if an error occurs.
+func (frs *FriendRequestSelect) Float64sX(ctx context.Context) []float64 {
+	v, err := frs.Float64s(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
+// Float64 returns a single float64 from a selector. It is only allowed when selecting one field.
+func (frs *FriendRequestSelect) Float64(ctx context.Context) (_ float64, err error) {
+	var v []float64
+	if v, err = frs.Float64s(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{friendrequest.Label}
+	default:
+		err = fmt.Errorf("ent: FriendRequestSelect.Float64s returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// Float64X is like Float64, but panics if an error occurs.
+func (frs *FriendRequestSelect) Float64X(ctx context.Context) float64 {
+	v, err := frs.Float64(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
+// Bools returns list of bools from a selector. It is only allowed when selecting one field.
+func (frs *FriendRequestSelect) Bools(ctx context.Context) ([]bool, error) {
+	if len(frs.fields) > 1 {
+		return nil, errors.New("ent: FriendRequestSelect.Bools is not achievable when selecting more than 1 field")
+	}
+	var v []bool
+	if err := frs.Scan(ctx, &v); err != nil {
+		return nil, err
+	}
+	return v, nil
+}
+
+// BoolsX is like Bools, but panics if an error occurs.
+func (frs *FriendRequestSelect) BoolsX(ctx context.Context) []bool {
+	v, err := frs.Bools(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
+// Bool returns a single bool from a selector. It is only allowed when selecting one field.
+func (frs *FriendRequestSelect) Bool(ctx context.Context) (_ bool, err error) {
+	var v []bool
+	if v, err = frs.Bools(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{friendrequest.Label}
+	default:
+		err = fmt.Errorf("ent: FriendRequestSelect.Bools returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// BoolX is like Bool, but panics if an error occurs.
+func (frs *FriendRequestSelect) BoolX(ctx context.Context) bool {
+	v, err := frs.Bool(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
 }
 
 func (frs *FriendRequestSelect) sqlScan(ctx context.Context, v interface{}) error {

@@ -1,19 +1,22 @@
 import React from 'react';
 
 import {
+  Button,
   Container,
   Grid,
   Stack,
   TextField,
   Paper,
-  IconButton,
+  // IconButton,
 } from '@mui/material';
-import { Send } from '@mui/icons-material';
+// import { Send } from '@mui/icons-material';
+import { useTheme } from '@mui/system';
 
 import InfiniteScroll from 'react-infinite-scroller';
 import { gql, useQuery, useMutation } from '@apollo/client';
 
 import Post from '../components/Post';
+import Gallery from 'react-grid-gallery';
 
 const FEED = gql`
   query Feed($after: String) {
@@ -32,6 +35,7 @@ const FEED = gql`
         }
         text
         createdAt
+        images
       }
     }
   }
@@ -50,17 +54,39 @@ const PUBLISH_POST = gql`
       }
       text
       createdAt
+      images
+    }
+  }
+`;
+
+const UPLOAD_IMAGE = gql`
+  mutation UploadImage($file: Upload!) {
+    uploadImage(file: $file) {
+      name
     }
   }
 `;
 
 function PostInput() {
   const [text, setText] = React.useState('');
+  const [images, setImages] = React.useState([]);
+
+  const theme = useTheme();
+
+  const galleryImages = images.map(({ blob }) => {
+    const url = window.URL.createObjectURL(blob);
+    const image = {
+      src: url,
+      thumbnail: url,
+    };
+    return image;
+  });
 
   const [publish] = useMutation(PUBLISH_POST, {
     variables: {
       input: {
         text: text,
+        images: images.map(({ name }) => name),
       },
     },
     refetchQueries: [
@@ -68,19 +94,55 @@ function PostInput() {
       'Feed',
     ],
   });
+  const [upload] = useMutation(UPLOAD_IMAGE);
 
-  const onChange = (e) => {
+  const handleChange = (e) => {
+    console.log(e);
     setText(e.target.value);
   };
-  const onClick = (e) => {
+
+  const disabled = !(text || images.length);
+  const handleClick = (e) => {
     e.preventDefault();
     publish().then((res) => {
       setText('');
+      setImages([]);
     });
   };
 
+  const handlePaste = (e) => {
+    e.preventDefault();
+
+    navigator.clipboard.read().
+      then((items) => {
+        for (const item of items) {
+          if (!item.types.includes('image/png')) {
+            continue;
+          }
+
+          item.getType('image/png').
+            then((blob) => {
+              upload({
+                variables: {
+                  file: blob,
+                },
+              }).
+                then((res) => {
+                  const { name } = res.data.uploadImage;
+                  setImages((images) => {
+                    return [...images, {
+                      name: name,
+                      blob: blob,
+                    }];
+                  });
+                });
+            });
+        }
+      });
+  };
+
   return (
-    <Paper>
+    <Paper sx={{ p: 1 }}>
       <Grid
         container
         direction="row"
@@ -95,9 +157,10 @@ function PostInput() {
             variant="standard"
             placeholder='New post'
             value={text}
-            onChange={onChange}
+            onChange={handleChange}
+            onPaste={handlePaste}
             sx={{
-              m: 2,
+              ml: 1,
               backgroudColor: 'white.100',
             }}
             InputProps={{
@@ -106,11 +169,19 @@ function PostInput() {
           />
         </Grid>
         <Grid item>
-          <IconButton sx={{ m: 1 }} onClick={onClick}>
-            <Send />
-          </IconButton>
+          <Button size='small' onClick={handleClick} disabled={disabled}>
+            Publish
+          </Button>
         </Grid>
       </Grid>
+      {galleryImages.length > 0 &&
+        <Gallery
+          images={galleryImages}
+          enableImageSelection={false}
+          backdropClosesModal={true}
+          margin={theme.spacing(1)}
+        />
+      }
     </Paper>
   );
 }

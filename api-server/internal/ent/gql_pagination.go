@@ -198,13 +198,14 @@ func validateFirstLast(first, last *int) (err *gqlerror.Error) {
 	return err
 }
 
-func collectedField(ctx context.Context, path ...string) *graphql.CollectedField {
+func getCollectedField(ctx context.Context, path ...string) *graphql.CollectedField {
 	fc := graphql.GetFieldContext(ctx)
 	if fc == nil {
 		return nil
 	}
-	field := fc.Field
 	oc := graphql.GetOperationContext(ctx)
+	field := fc.Field
+
 walk:
 	for _, name := range path {
 		for _, f := range graphql.CollectFields(oc, field.Selections, nil) {
@@ -222,7 +223,7 @@ func hasCollectedField(ctx context.Context, path ...string) bool {
 	if graphql.GetFieldContext(ctx) == nil {
 		return true
 	}
-	return collectedField(ctx, path...) != nil
+	return getCollectedField(ctx, path...) != nil
 }
 
 const (
@@ -231,16 +232,6 @@ const (
 	pageInfoField   = "pageInfo"
 	totalCountField = "totalCount"
 )
-
-func paginateLimit(first, last *int) int {
-	var limit int
-	if first != nil {
-		limit = *first + 1
-	} else if last != nil {
-		limit = *last + 1
-	}
-	return limit
-}
 
 // FriendRequestEdge is the edge representation of FriendRequest.
 type FriendRequestEdge struct {
@@ -255,44 +246,8 @@ type FriendRequestConnection struct {
 	TotalCount int                  `json:"totalCount"`
 }
 
-func (c *FriendRequestConnection) build(nodes []*FriendRequest, pager *friendrequestPager, first, last *int) {
-	if first != nil && *first+1 == len(nodes) {
-		c.PageInfo.HasNextPage = true
-		nodes = nodes[:len(nodes)-1]
-	} else if last != nil && *last+1 == len(nodes) {
-		c.PageInfo.HasPreviousPage = true
-		nodes = nodes[:len(nodes)-1]
-	}
-	var nodeAt func(int) *FriendRequest
-	if last != nil {
-		n := len(nodes) - 1
-		nodeAt = func(i int) *FriendRequest {
-			return nodes[n-i]
-		}
-	} else {
-		nodeAt = func(i int) *FriendRequest {
-			return nodes[i]
-		}
-	}
-	c.Edges = make([]*FriendRequestEdge, len(nodes))
-	for i := range nodes {
-		node := nodeAt(i)
-		c.Edges[i] = &FriendRequestEdge{
-			Node:   node,
-			Cursor: pager.toCursor(node),
-		}
-	}
-	if l := len(c.Edges); l > 0 {
-		c.PageInfo.StartCursor = &c.Edges[0].Cursor
-		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
-	}
-	if c.TotalCount == 0 {
-		c.TotalCount = len(nodes)
-	}
-}
-
 // FriendRequestPaginateOption enables pagination customization.
-type FriendRequestPaginateOption func(*friendrequestPager) error
+type FriendRequestPaginateOption func(*friendRequestPager) error
 
 // WithFriendRequestOrder configures pagination ordering.
 func WithFriendRequestOrder(order *FriendRequestOrder) FriendRequestPaginateOption {
@@ -300,7 +255,7 @@ func WithFriendRequestOrder(order *FriendRequestOrder) FriendRequestPaginateOpti
 		order = DefaultFriendRequestOrder
 	}
 	o := *order
-	return func(pager *friendrequestPager) error {
+	return func(pager *friendRequestPager) error {
 		if err := o.Direction.Validate(); err != nil {
 			return err
 		}
@@ -314,7 +269,7 @@ func WithFriendRequestOrder(order *FriendRequestOrder) FriendRequestPaginateOpti
 
 // WithFriendRequestFilter configures pagination filter.
 func WithFriendRequestFilter(filter func(*FriendRequestQuery) (*FriendRequestQuery, error)) FriendRequestPaginateOption {
-	return func(pager *friendrequestPager) error {
+	return func(pager *friendRequestPager) error {
 		if filter == nil {
 			return errors.New("FriendRequestQuery filter cannot be nil")
 		}
@@ -323,13 +278,13 @@ func WithFriendRequestFilter(filter func(*FriendRequestQuery) (*FriendRequestQue
 	}
 }
 
-type friendrequestPager struct {
+type friendRequestPager struct {
 	order  *FriendRequestOrder
 	filter func(*FriendRequestQuery) (*FriendRequestQuery, error)
 }
 
-func newFriendRequestPager(opts []FriendRequestPaginateOption) (*friendrequestPager, error) {
-	pager := &friendrequestPager{}
+func newFriendRequestPager(opts []FriendRequestPaginateOption) (*friendRequestPager, error) {
+	pager := &friendRequestPager{}
 	for _, opt := range opts {
 		if err := opt(pager); err != nil {
 			return nil, err
@@ -341,18 +296,18 @@ func newFriendRequestPager(opts []FriendRequestPaginateOption) (*friendrequestPa
 	return pager, nil
 }
 
-func (p *friendrequestPager) applyFilter(query *FriendRequestQuery) (*FriendRequestQuery, error) {
+func (p *friendRequestPager) applyFilter(query *FriendRequestQuery) (*FriendRequestQuery, error) {
 	if p.filter != nil {
 		return p.filter(query)
 	}
 	return query, nil
 }
 
-func (p *friendrequestPager) toCursor(fr *FriendRequest) Cursor {
+func (p *friendRequestPager) toCursor(fr *FriendRequest) Cursor {
 	return p.order.Field.toCursor(fr)
 }
 
-func (p *friendrequestPager) applyCursors(query *FriendRequestQuery, after, before *Cursor) *FriendRequestQuery {
+func (p *friendRequestPager) applyCursors(query *FriendRequestQuery, after, before *Cursor) *FriendRequestQuery {
 	for _, predicate := range cursorsToPredicates(
 		p.order.Direction, after, before,
 		p.order.Field.field, DefaultFriendRequestOrder.Field.field,
@@ -362,7 +317,7 @@ func (p *friendrequestPager) applyCursors(query *FriendRequestQuery, after, befo
 	return query
 }
 
-func (p *friendrequestPager) applyOrder(query *FriendRequestQuery, reverse bool) *FriendRequestQuery {
+func (p *friendRequestPager) applyOrder(query *FriendRequestQuery, reverse bool) *FriendRequestQuery {
 	direction := p.order.Direction
 	if reverse {
 		direction = direction.reverse()
@@ -372,19 +327,6 @@ func (p *friendrequestPager) applyOrder(query *FriendRequestQuery, reverse bool)
 		query = query.Order(direction.orderFunc(DefaultFriendRequestOrder.Field.field))
 	}
 	return query
-}
-
-func (p *friendrequestPager) orderExpr(reverse bool) sql.Querier {
-	direction := p.order.Direction
-	if reverse {
-		direction = direction.reverse()
-	}
-	return sql.ExprFunc(func(b *sql.Builder) {
-		b.Ident(p.order.Field.field).Pad().WriteString(string(direction))
-		if p.order.Field != DefaultFriendRequestOrder.Field {
-			b.Comma().Ident(DefaultFriendRequestOrder.Field.field).Pad().WriteString(string(direction))
-		}
-	})
 }
 
 // Paginate executes the query and returns a relay based cursor connection to FriendRequest.
@@ -399,17 +341,22 @@ func (fr *FriendRequestQuery) Paginate(
 	if err != nil {
 		return nil, err
 	}
+
 	if fr, err = pager.applyFilter(fr); err != nil {
 		return nil, err
 	}
+
 	conn := &FriendRequestConnection{Edges: []*FriendRequestEdge{}}
 	if !hasCollectedField(ctx, edgesField) || first != nil && *first == 0 || last != nil && *last == 0 {
-		if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
-			if conn.TotalCount, err = fr.Count(ctx); err != nil {
+		if hasCollectedField(ctx, totalCountField) ||
+			hasCollectedField(ctx, pageInfoField) {
+			count, err := fr.Count(ctx)
+			if err != nil {
 				return nil, err
 			}
-			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
-			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+			conn.TotalCount = count
+			conn.PageInfo.HasNextPage = first != nil && count > 0
+			conn.PageInfo.HasPreviousPage = last != nil && count > 0
 		}
 		return conn, nil
 	}
@@ -424,20 +371,58 @@ func (fr *FriendRequestQuery) Paginate(
 
 	fr = pager.applyCursors(fr, after, before)
 	fr = pager.applyOrder(fr, last != nil)
-	if limit := paginateLimit(first, last); limit != 0 {
-		fr.Limit(limit)
+	var limit int
+	if first != nil {
+		limit = *first + 1
+	} else if last != nil {
+		limit = *last + 1
 	}
-	if field := collectedField(ctx, edgesField, nodeField); field != nil {
-		if err := fr.collectField(ctx, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
-			return nil, err
-		}
+	if limit > 0 {
+		fr = fr.Limit(limit)
+	}
+
+	if field := getCollectedField(ctx, edgesField, nodeField); field != nil {
+		fr = fr.collectField(graphql.GetOperationContext(ctx), *field)
 	}
 
 	nodes, err := fr.All(ctx)
 	if err != nil || len(nodes) == 0 {
 		return conn, err
 	}
-	conn.build(nodes, pager, first, last)
+
+	if len(nodes) == limit {
+		conn.PageInfo.HasNextPage = first != nil
+		conn.PageInfo.HasPreviousPage = last != nil
+		nodes = nodes[:len(nodes)-1]
+	}
+
+	var nodeAt func(int) *FriendRequest
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *FriendRequest {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *FriendRequest {
+			return nodes[i]
+		}
+	}
+
+	conn.Edges = make([]*FriendRequestEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		conn.Edges[i] = &FriendRequestEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+
+	conn.PageInfo.StartCursor = &conn.Edges[0].Cursor
+	conn.PageInfo.EndCursor = &conn.Edges[len(conn.Edges)-1].Cursor
+	if conn.TotalCount == 0 {
+		conn.TotalCount = len(nodes)
+	}
+
 	return conn, nil
 }
 
@@ -486,42 +471,6 @@ type UserConnection struct {
 	Edges      []*UserEdge `json:"edges"`
 	PageInfo   PageInfo    `json:"pageInfo"`
 	TotalCount int         `json:"totalCount"`
-}
-
-func (c *UserConnection) build(nodes []*User, pager *userPager, first, last *int) {
-	if first != nil && *first+1 == len(nodes) {
-		c.PageInfo.HasNextPage = true
-		nodes = nodes[:len(nodes)-1]
-	} else if last != nil && *last+1 == len(nodes) {
-		c.PageInfo.HasPreviousPage = true
-		nodes = nodes[:len(nodes)-1]
-	}
-	var nodeAt func(int) *User
-	if last != nil {
-		n := len(nodes) - 1
-		nodeAt = func(i int) *User {
-			return nodes[n-i]
-		}
-	} else {
-		nodeAt = func(i int) *User {
-			return nodes[i]
-		}
-	}
-	c.Edges = make([]*UserEdge, len(nodes))
-	for i := range nodes {
-		node := nodeAt(i)
-		c.Edges[i] = &UserEdge{
-			Node:   node,
-			Cursor: pager.toCursor(node),
-		}
-	}
-	if l := len(c.Edges); l > 0 {
-		c.PageInfo.StartCursor = &c.Edges[0].Cursor
-		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
-	}
-	if c.TotalCount == 0 {
-		c.TotalCount = len(nodes)
-	}
 }
 
 // UserPaginateOption enables pagination customization.
@@ -607,19 +556,6 @@ func (p *userPager) applyOrder(query *UserQuery, reverse bool) *UserQuery {
 	return query
 }
 
-func (p *userPager) orderExpr(reverse bool) sql.Querier {
-	direction := p.order.Direction
-	if reverse {
-		direction = direction.reverse()
-	}
-	return sql.ExprFunc(func(b *sql.Builder) {
-		b.Ident(p.order.Field.field).Pad().WriteString(string(direction))
-		if p.order.Field != DefaultUserOrder.Field {
-			b.Comma().Ident(DefaultUserOrder.Field.field).Pad().WriteString(string(direction))
-		}
-	})
-}
-
 // Paginate executes the query and returns a relay based cursor connection to User.
 func (u *UserQuery) Paginate(
 	ctx context.Context, after *Cursor, first *int,
@@ -632,17 +568,22 @@ func (u *UserQuery) Paginate(
 	if err != nil {
 		return nil, err
 	}
+
 	if u, err = pager.applyFilter(u); err != nil {
 		return nil, err
 	}
+
 	conn := &UserConnection{Edges: []*UserEdge{}}
 	if !hasCollectedField(ctx, edgesField) || first != nil && *first == 0 || last != nil && *last == 0 {
-		if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
-			if conn.TotalCount, err = u.Count(ctx); err != nil {
+		if hasCollectedField(ctx, totalCountField) ||
+			hasCollectedField(ctx, pageInfoField) {
+			count, err := u.Count(ctx)
+			if err != nil {
 				return nil, err
 			}
-			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
-			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+			conn.TotalCount = count
+			conn.PageInfo.HasNextPage = first != nil && count > 0
+			conn.PageInfo.HasPreviousPage = last != nil && count > 0
 		}
 		return conn, nil
 	}
@@ -657,20 +598,58 @@ func (u *UserQuery) Paginate(
 
 	u = pager.applyCursors(u, after, before)
 	u = pager.applyOrder(u, last != nil)
-	if limit := paginateLimit(first, last); limit != 0 {
-		u.Limit(limit)
+	var limit int
+	if first != nil {
+		limit = *first + 1
+	} else if last != nil {
+		limit = *last + 1
 	}
-	if field := collectedField(ctx, edgesField, nodeField); field != nil {
-		if err := u.collectField(ctx, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
-			return nil, err
-		}
+	if limit > 0 {
+		u = u.Limit(limit)
+	}
+
+	if field := getCollectedField(ctx, edgesField, nodeField); field != nil {
+		u = u.collectField(graphql.GetOperationContext(ctx), *field)
 	}
 
 	nodes, err := u.All(ctx)
 	if err != nil || len(nodes) == 0 {
 		return conn, err
 	}
-	conn.build(nodes, pager, first, last)
+
+	if len(nodes) == limit {
+		conn.PageInfo.HasNextPage = first != nil
+		conn.PageInfo.HasPreviousPage = last != nil
+		nodes = nodes[:len(nodes)-1]
+	}
+
+	var nodeAt func(int) *User
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *User {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *User {
+			return nodes[i]
+		}
+	}
+
+	conn.Edges = make([]*UserEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		conn.Edges[i] = &UserEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+
+	conn.PageInfo.StartCursor = &conn.Edges[0].Cursor
+	conn.PageInfo.EndCursor = &conn.Edges[len(conn.Edges)-1].Cursor
+	if conn.TotalCount == 0 {
+		conn.TotalCount = len(nodes)
+	}
+
 	return conn, nil
 }
 

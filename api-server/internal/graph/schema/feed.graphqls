@@ -1,5 +1,6 @@
 input PostInput {
   text: String!
+  images: [String!]
 }
 
 type Post {
@@ -7,6 +8,7 @@ type Post {
   from: User!
   text: String!
   createdAt: Time!
+  images: [String!]!
 }
 
 type FeedPayload {
