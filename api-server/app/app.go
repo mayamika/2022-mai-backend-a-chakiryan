@@ -69,13 +69,13 @@ func New(ctx context.Context, c Config, logger *zap.Logger) (*App, error) {
 	}
 
 	a.httpServer = &http.Server{
-		Addr:    c.Addr,
+		Addr:    ":" + c.Port,
 		Handler: a.routes(),
 	}
 	go func() {
 		err := a.httpServer.ListenAndServe()
 		if !errors.Is(err, http.ErrServerClosed) {
-			logger.Error("serve http", zap.Error(err))
+			logger.Panic("serve http", zap.Error(err))
 		}
 	}()
 

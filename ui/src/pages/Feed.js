@@ -111,8 +111,6 @@ function PostInput() {
   };
 
   const handlePaste = (e) => {
-    e.preventDefault();
-
     navigator.clipboard.read().
       then((items) => {
         for (const item of items) {

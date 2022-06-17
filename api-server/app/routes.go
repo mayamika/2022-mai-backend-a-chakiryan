@@ -2,12 +2,14 @@ package app
 
 import (
 	"context"
+	"net/http"
 	"sync"
 
 	"entgo.io/contrib/entgql"
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/go-chi/chi"
 	"github.com/vektah/gqlparser/v2/ast"
 	"github.com/vektah/gqlparser/v2/gqlerror"
@@ -36,6 +38,13 @@ func (a *App) routes() chi.Router {
 	})
 
 	r := chi.NewRouter()
+	r.Use(func(h http.Handler) http.Handler {
+		fn := func(w http.ResponseWriter, r *http.Request) {
+			spew.Dump(r.Header)
+			h.ServeHTTP(w, r)
+		}
+		return http.HandlerFunc(fn)
+	})
 	r.Use(auth.Middleware())
 
 	r.Mount(`/query`, query)

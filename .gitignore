@@ -1,5 +1,9 @@
 # Editors.
-.vscode
+/.vscode
 
-# Temp
-.build-cache
+# Temp.
+/.build-cache
+
+# Local.
+/env
+/run

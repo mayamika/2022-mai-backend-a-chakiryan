@@ -3,7 +3,11 @@ package app
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
+	"errors"
+	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/opensearch-project/opensearch-go"
@@ -14,6 +18,19 @@ func newOpensearchClient(c OpensearchConfig) (*opensearch.Client, error) {
 	tlsConfig := &tls.Config{
 		InsecureSkipVerify: true,
 	}
+	if c.CACert != "" {
+		rootCertPool := x509.NewCertPool()
+		pem, err := os.ReadFile(c.CACert)
+		if err != nil {
+			return nil, fmt.Errorf("open ca cert: %w", err)
+		}
+		if ok := rootCertPool.AppendCertsFromPEM(pem); !ok {
+			return nil, errors.New("failed to append pem")
+		}
+
+		tlsConfig.RootCAs = rootCertPool
+	}
+
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	transport.TLSClientConfig = tlsConfig
 
