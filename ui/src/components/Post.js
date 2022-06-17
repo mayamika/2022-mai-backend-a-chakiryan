@@ -24,12 +24,10 @@ function Post(props) {
   const theme = useTheme();
 
   const galleryImages = images.map((src) => {
-    const url = 'https://mai-post-images.storage.yandexcloud.net/' + src;
+    const url = '/images/' + src;
     const image = {
       src: url,
       thumbnail: url,
-      // thumbnailWidth: 320,
-      // thumbnailHeight: 174,
     };
     return image;
   });

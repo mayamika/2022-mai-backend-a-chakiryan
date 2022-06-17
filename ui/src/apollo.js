@@ -21,7 +21,7 @@ function ApolloProvider({ children }) {
     return {
       headers: {
         ...headers,
-        'AuthToken': session ? session.token : '',
+        'Mai-Backend-Token': session ? session.token : '',
       },
     };
   });

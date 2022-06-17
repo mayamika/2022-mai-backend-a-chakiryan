@@ -12,9 +12,7 @@ import (
 )
 
 func main() {
-	config := app.Config{
-		Addr: ":8080",
-	}
+	var config app.Config
 	config.BindEnv()
 
 	logger := newLogger()

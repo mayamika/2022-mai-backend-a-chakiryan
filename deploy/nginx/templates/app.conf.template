@@ -1,5 +1,5 @@
 server {
-    listen 80;
+    listen ${PORT};
     root  /opt/app;
 
     location / {
@@ -8,5 +8,8 @@ server {
 
     location /query {
         proxy_pass ${API_SERVER_ADDR};
+    }
+    location /images/ {
+        proxy_pass ${IMAGES_ADDR};
     }
 }

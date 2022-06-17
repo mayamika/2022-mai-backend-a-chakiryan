@@ -12,8 +12,8 @@ FROM docker.io/nginx:${NGINX_VERSION}
 
 # Clean existing configuration.
 RUN rm /etc/nginx/conf.d/*
+# Yandex cloud fix.
+RUN echo "" > /etc/nginx/conf.d/default.conf
 
 COPY --from=builder /ui/build /opt/app/
 COPY /deploy/nginx/templates /etc/nginx/templates
-
-EXPOSE 80

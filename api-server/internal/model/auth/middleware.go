@@ -6,7 +6,7 @@ import (
 	"github.com/mayamika/2022-mai-backend-a-chakiryan/api-server/internal/model/token"
 )
 
-const authHeader = "AuthToken"
+const authHeader = "Mai-Backend-Token"
 
 func Middleware() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
